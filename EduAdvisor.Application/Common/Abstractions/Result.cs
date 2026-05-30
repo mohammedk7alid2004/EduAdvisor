@@ -21,5 +21,14 @@
         {
             return new Result<TEntity> { IsSuccess = false, Message = message, StatusCode = statusCode };
         }
+        public static Result<TEntity> NotFound(string message)
+        {
+            return new Result<TEntity> { IsSuccess = false, Message = message, StatusCode = 404 };
+        }
+
+        public static Result<TEntity> Conflict(string message)
+        {
+            return new Result<TEntity> { IsSuccess = false, Message = message, StatusCode = 409 };
+        }
     }
 }

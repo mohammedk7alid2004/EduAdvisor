@@ -66,4 +66,9 @@ public sealed class University : BaseEntity
         IsActive = false;
         UpdateTimestamp();
     }
+    public void UpdateAddress(string? address)
+    {
+        Address = address?.Trim();
+        UpdateTimestamp();
+    }
 }
