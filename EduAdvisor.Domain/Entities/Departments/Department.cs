@@ -9,7 +9,6 @@ public sealed class Department : BaseEntity
     public string? Code { get; private set; }
     public string? Description { get; private set; }
     public Guid FacultyId { get; private set; }
-
     public Faculty Faculty { get; private set; } = default!;
 
     private Department() { }
@@ -18,7 +17,6 @@ public sealed class Department : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name is required.", nameof(name));
-
         if (facultyId == Guid.Empty)
             throw new ArgumentException("FacultyId is required.", nameof(facultyId));
 
@@ -32,7 +30,6 @@ public sealed class Department : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name is required.", nameof(name));
-
         Name = name.Trim();
         UpdateTimestamp();
     }
@@ -46,6 +43,14 @@ public sealed class Department : BaseEntity
     public void UpdateDescription(string? description)
     {
         Description = description?.Trim();
+        UpdateTimestamp();
+    }
+
+    public void UpdateFaculty(Guid facultyId)
+    {
+        if (facultyId == Guid.Empty)
+            throw new ArgumentException("FacultyId is required.", nameof(facultyId));
+        FacultyId = facultyId;
         UpdateTimestamp();
     }
 }
