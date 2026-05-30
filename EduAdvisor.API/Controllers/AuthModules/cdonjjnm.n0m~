@@ -1,0 +1,389 @@
+﻿using Awael_Al_Joudah.EduAdvisor.Application.Common.Interfaces.AuthModules;
+using Awael_Al_Joudah.EduAdvisor.Application.Handlers.AuthModules;
+using Awael_Al_Joudah.EduAdvisor.Application.Interfaces.AuthModules;
+using Awael_Al_Joudah.Domain.Entities.AuthModules;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+using Awael_Al_Joudah.EduAdvisor.Application.Handlers.AuthModules;
+using Awael_Al_Joudah.Infrastructure.Persistence;
+
+
+namespace Awael_Al_Joudah.API.Controllers.AuthModules
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private readonly UserManager<EduAdvisor.ApplicationUser> _userManager;
+        private readonly IConfiguration _configuration;
+        private readonly ITokenService _tokenService;
+        private readonly IEmailService _emailService;
+        private readonly ISmsService _smsService;
+        private readonly IOtpHandler _otpHandler;
+        //private readonly DbContext _dbContext;
+        private readonly EduAdvisor.ApplicationDbContext _dbContext;
+        private readonly IPasswordHasher<EduAdvisor.ApplicationUser> _passwordHasher;
+
+        public AuthController(
+            UserManager<EduAdvisor.ApplicationUser> userManager,
+            IConfiguration configuration,
+            ITokenService tokenService,
+            IEmailService emailService,
+            ISmsService smsService,
+            IOtpHandler otpHandler,
+            //DbContext dbContext,
+            EduAdvisor.ApplicationDbContext dbContext,
+            IPasswordHasher<EduAdvisor.ApplicationUser> passwordHasher)
+        {
+            _userManager = userManager;
+            _configuration = configuration;
+            _tokenService = tokenService;
+            _emailService = emailService;
+            _smsService = smsService;
+            _otpHandler = otpHandler;
+            _dbContext = dbContext;
+            _passwordHasher = passwordHasher;
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                return Unauthorized();
+
+            var jwtToken = await _tokenService.GenerateJwtToken(user);
+            var refreshToken = await _tokenService.GenerateRefreshToken(user);
+
+            return Ok(new
+            {
+                token = jwtToken,
+                refreshToken = refreshToken.Token
+            });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        {
+            var refreshToken = await _tokenService.GetRefreshTokenAsync(request.Token);
+
+            if (refreshToken == null || !refreshToken.IsActive)
+                return Unauthorized("Refresh token is invalid or expired.");
+
+            refreshToken.RevokedOn = DateTime.UtcNow;
+            await _tokenService.RevokeRefreshTokenAsync(refreshToken);
+
+            var user = await _userManager.FindByIdAsync(refreshToken.EduAdvisor.ApplicationUserId);
+
+            var newJwtToken = await _tokenService.GenerateJwtToken(user);
+            var newRefreshToken = await _tokenService.GenerateRefreshToken(user);
+
+            return Ok(new
+            {
+                token = newJwtToken,
+                refreshToken = newRefreshToken.Token
+            });
+        }
+
+
+
+
+
+        [HttpPost("send-otp-sms")]
+        public async Task<IActionResult> SendOtpSms([FromBody] OtpRequest request)
+        {
+            if (string.IsNullOrEmpty(request.PhoneNumber))
+                return BadRequest("Phone number is required");
+
+            
+            var otpCode = await _otpHandler.SendOtpAsync(null, request.PhoneNumber);
+
+            
+            return Ok(new { Message = "OTP sent successfully" });
+        }
+
+
+
+        //[HttpPost("send-otp-sms")]
+        //public async Task<IActionResult> SendOtpSms([FromBody] OtpRequest request)
+        //{
+        //    var otpCode = new Random().Next(100000, 999999).ToString();
+
+        //    //if (!string.IsNullOrEmpty(request.Email))
+        //    //{
+        //    //    await _emailService.SendOtpAsync(request.Email, otpCode);
+        //    //}
+
+        //    if (!string.IsNullOrEmpty(request.PhoneNumber))
+        //    {
+        //        await _smsService.SendOtpAsync(request.PhoneNumber, otpCode);
+        //    }
+
+        //    return Ok(new { Message = "OTP sent successfully", Otp = otpCode });
+        //}
+
+        [HttpPost("send-otp-email")]
+        public async Task<IActionResult> SendOtpEmail([FromBody] OtpRequest request)
+        {
+            var otpCode = new Random().Next(100000, 999999).ToString();
+
+            if (!string.IsNullOrEmpty(request.Email))
+            {
+                await _emailService.SendOtpAsync(request.Email, otpCode);
+            }
+
+            //if (!string.IsNullOrEmpty(request.PhoneNumber))
+            //{
+            //    await _smsService.SendOtpAsync(request.PhoneNumber, otpCode);
+            //}
+
+            return Ok(new { Message = "OTP sent successfully", Otp = otpCode });
+        }
+
+
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var otpValid = await _otpHandler.VerifyOtpAsync(request.Target, request.OtpCode);
+            if (!otpValid)
+                return BadRequest(new { Message = "Invalid or expired OTP" });
+
+            var user = await _dbContext.Set<EduAdvisor.ApplicationUser>()
+                .FirstOrDefaultAsync(u => u.Email == request.Target || u.PhoneNumber == request.Target);
+
+            if (user == null)
+                return NotFound(new { Message = "User not found" });
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
+            await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+            return Ok(new { Message = "Password reset successfully" });
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] OtpVerifyRequest request)
+        {
+            var result = await _otpHandler.VerifyOtpAsync(request.Target, request.Code);
+            if (!result) return BadRequest(new { Message = "Invalid or expired OTP" });
+
+            return Ok(new { Message = "OTP verified successfully" });
+        }
+    }
+
+    // DTOs
+    public class LoginRequest { public string Email { get; set; } public string Password { get; set; } }
+    public class RefreshTokenRequest { public string Token { get; set; } }
+    public class OtpRequest { public string Email { get; set; } public string PhoneNumber { get; set; } }
+    public class OtpVerifyRequest { public string Target { get; set; } public string Code { get; set; } }
+    public class ResetPasswordRequest { public string Target { get; set; } public string OtpCode { get; set; } public string NewPassword { get; set; } }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//using Awael_Al_Joudah.EduAdvisor.Application.Common.Interfaces.AuthModules;
+//using Awael_Al_Joudah.EduAdvisor.Application.Common.Interfaces.AuthModules;
+//using Awael_Al_Joudah.EduAdvisor.Application.Handlers.AuthModules;
+//using Awael_Al_Joudah.EduAdvisor.Application.Interfaces.AuthModules;
+//using Awael_Al_Joudah.Domain.Entities.AuthModules;
+//using Awael_Al_Joudah.Infrastructure.Services.AuthModules;
+//using Microsoft.AspNetCore.Identity;
+//using Microsoft.AspNetCore.Identity.Data;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.EntityFrameworkCore;
+//using System.Threading.Tasks;
+
+
+
+
+
+
+//namespace Awael_Al_Joudah.API.Controllers.AuthModules
+//{
+//    [ApiController]
+//    [Route("api/[controller]")]
+//    public class AuthController : ControllerBase
+//    {
+//        private readonly UserManager<EduAdvisor.ApplicationUser> _userManager;
+//        private readonly IConfiguration _configuration;
+//        private readonly ITokenService _tokenService;
+
+//        private readonly IEmailService _emailService;
+//        private readonly ISmsService _smsService;
+
+
+
+//        public AuthController(UserManager<EduAdvisor.ApplicationUser> userManager, IConfiguration configuration, ITokenService tokenService)
+//        {
+//            _userManager = userManager;
+//            _configuration = configuration;
+//            _tokenService = tokenService;
+
+//            _emailService = emailService;
+//            _smsService = smsService;
+
+//            IEmailService emailService;
+//            ISmsService smsService;    
+
+
+
+
+//        }
+
+//        [HttpPost("login")]
+//        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+//        {
+//            var user = await _userManager.FindByEmailAsync(request.Email);
+//            if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+//                return Unauthorized();
+
+//            var jwtToken = await _tokenService.GenerateJwtToken(user);
+//            var refreshToken = await _tokenService.GenerateRefreshToken(user);
+
+//            return Ok(new
+//            {
+//                token = jwtToken,
+//                refreshToken = refreshToken.Token
+//            });
+//        }
+
+//        [HttpPost("refresh")]
+//        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+//        {
+//            var refreshToken = await _tokenService.GetRefreshTokenAsync(request.Token);
+
+//            if (refreshToken == null || !refreshToken.IsActive)
+//                return Unauthorized("Refresh token is invalid or expired.");
+
+//            refreshToken.RevokedOn = DateTime.UtcNow;
+//            await _tokenService.RevokeRefreshTokenAsync(refreshToken);
+
+//            var user = await _userManager.FindByIdAsync(refreshToken.EduAdvisor.ApplicationUserId);
+
+//            var newJwtToken = await _tokenService.GenerateJwtToken(user);
+//            var newRefreshToken = await _tokenService.GenerateRefreshToken(user);
+
+//            return Ok(new
+//            {
+//                token = newJwtToken,
+//                refreshToken = newRefreshToken.Token
+//            });
+//        }
+
+
+//        [HttpPost("send-otp")]
+//        public async Task<IActionResult> SendOtp([FromBody] OtpRequest request)
+//        {
+//            var otpCode = new Random().Next(100000, 999999).ToString();
+
+//            if (!string.IsNullOrEmpty(request.Email))
+//            {
+//                await _emailService.SendOtpAsync(request.Email, otpCode);
+//            }
+
+//            if (!string.IsNullOrEmpty(request.PhoneNumber))
+//            {
+//                await _smsService.SendOtpAsync(request.PhoneNumber, otpCode);
+//            }
+
+//            return Ok(new { Message = "OTP sent successfully", Otp = otpCode });
+//        }
+
+//        [HttpPost("reset-password")]
+//        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+//        {
+//            // التحقق من OTP أولاً
+//            var otpValid = await _otpHandler.VerifyOtpAsync(request.Target, request.OtpCode);
+//            if (!otpValid)
+//                return BadRequest(new { Message = "Invalid or expired OTP" });
+
+//            // البحث عن المستخدم حسب البريد أو الهاتف
+//            var user = await _dbContext.Users
+//                .FirstOrDefaultAsync(u => u.Email == request.Target || u.PhoneNumber == request.Target);
+
+//            if (user == null)
+//                return NotFound(new { Message = "User not found" });
+
+//            // تحديث كلمة المرور
+//            user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
+//            await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+//            return Ok(new { Message = "Password reset successfully" });
+//        }
+
+
+
+//        [HttpPost("verify-otp")]
+//        public async Task<IActionResult> VerifyOtp([FromBody] OtpVerifyRequest request)
+//        {
+//            var result = await _otpHandler.VerifyOtpAsync(request.Target, request.Code);
+//            if (!result) return BadRequest(new { Message = "Invalid or expired OTP" });
+
+//            return Ok(new { Message = "OTP verified successfully" });
+//        }
+//    }
+
+//    // DTOs
+//    public class LoginRequest
+//    {
+//        public string Email { get; set; }
+//        public string Password { get; set; }
+//    }
+
+//    public class RefreshTokenRequest
+//    {
+//        public string Token { get; set; }
+//    }
+
+//    public class OtpRequest
+//    {
+//        public string Email { get; set; }
+//        public string PhoneNumber { get; set; }
+//    }
+
+//    public class OtpVerifyRequest
+//    {
+//        public string Target { get; set; } // Email أو Phone
+//        public string Code { get; set; }
+//    }
+
+//    public class ResetPasswordRequest
+//    {
+//        public string Target { get; set; } // Email أو Phone
+//        public string OtpCode { get; set; }
+//        public string NewPassword { get; set; }
+//    }
+//}
+
+
+
+
+
+
+
+
+
+

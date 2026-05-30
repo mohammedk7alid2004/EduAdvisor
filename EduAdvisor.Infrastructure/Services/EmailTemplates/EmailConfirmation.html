@@ -1,0 +1,144 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Your OTP Code - Edu Advisor</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .header {
+            background-color: #1a3c6e;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header-logo {
+            width: 42px;
+            height: 42px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .header-subtitle {
+            color: #a8c4e8;
+            font-size: 12px;
+            margin: 2px 0 0;
+        }
+
+        .content {
+            padding: 32px;
+            text-align: center;
+        }
+
+        .alert-bar {
+            background: #e8f0fb;
+            border-left: 3px solid #1a3c6e;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #1a3c6e;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .content p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #444;
+        }
+
+        .otp-code {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            background: #e8f0fb;
+            display: inline-block;
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            color: #1a3c6e;
+            font-family: monospace;
+        }
+
+        .footer {
+            background: #f5f7fa;
+            border-top: 1px solid #e2e8f0;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #888;
+        }
+
+            .footer a {
+                color: #555;
+                text-decoration: none;
+                margin-left: 16px;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z" fill="#1a3c6e" />
+                    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" fill="#1a3c6e" />
+                </svg>
+            </div>
+            <div>
+                <p class="header-title">Edu Advisor</p>
+                <p class="header-subtitle">Your Academic Guidance Platform</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="alert-bar">🔐 One-Time Password (OTP)</div>
+            <p>Hi <strong>{{FullName}}</strong>,</p>
+            <p>
+                Use the following code to confirm your email. This code is valid for <strong>10 minutes</strong>.
+            </p>
+            <div class="otp-code">{{OtpCode}}</div>
+            <p style="font-size:13px; color:#999; margin-top:20px;">
+                If you didn't request this code, you can safely ignore this email.
+            </p>
+        </div>
+
+        <div class="footer">
+            <span>© 2025 Edu Advisor. All rights reserved.</span>
+            <div>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Unsubscribe</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
