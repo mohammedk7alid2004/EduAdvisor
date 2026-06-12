@@ -1,11 +1,11 @@
 ﻿using EduAdvisor.Domain.Entities.Enrollments;
-using EduAdvisor.Domain.Enums.University;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EduAdvisor.Infrastructure.Configurations;
 
-public class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
+public sealed class EnrollmentConfiguration
+    : IEntityTypeConfiguration<Enrollment>
 {
     public void Configure(EntityTypeBuilder<Enrollment> builder)
     {
@@ -21,18 +21,16 @@ public class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(x => x.Grade)
-            .HasColumnType("decimal(4,2)")
+        builder.Property(x => x.CoursePercentage)
+            .HasColumnType("decimal(5,2)")
+            .IsRequired(false);
+
+        builder.Property(x => x.CourseGpa)
+            .HasColumnType("decimal(3,2)")
             .IsRequired(false);
 
         builder.Property(x => x.RejectionReason)
             .HasMaxLength(500)
-            .IsRequired(false);
-
-        builder.Property(x => x.ReviewedAt)
-            .IsRequired(false);
-
-        builder.Property(x => x.GradedAt)
             .IsRequired(false);
 
         builder.HasOne(x => x.Student)
@@ -40,14 +38,14 @@ public class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
             .HasForeignKey(x => x.StudentId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.HasOne(x => x.Course)
+        builder.HasOne(x => x.SemesterCourse)
             .WithMany()
-            .HasForeignKey(x => x.CourseId)
+            .HasForeignKey(x => x.SemesterCourseId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.HasOne(x => x.Semester)
-            .WithMany()
-            .HasForeignKey(x => x.SemesterId)
+        builder.HasOne(x => x.RegistrationRequest)
+            .WithMany(x => x.Enrollments)
+            .HasForeignKey(x => x.RegistrationRequestId)
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(x => x.ReviewedByAdvisor)

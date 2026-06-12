@@ -5,15 +5,16 @@ namespace EduAdvisor.Domain.Entities.AuthModule;
 
 public class Advisor : BaseEntity
 {
+    private readonly List<Student> _students = [];
+
     public string UserId { get; private set; } = string.Empty;
     public Guid DepartmentId { get; private set; }
     public bool IsPending { get; private set; } = true;
 
-    public User User { get; private set; } = default!;
-    public Department Department { get; private set; } = default!;
+    public virtual User User { get; private set; } = default!;
+    public virtual Department Department { get; private set; } = default!;
 
-    private readonly List<Student> _students = [];
-    public IReadOnlyCollection<Student> Students => _students;
+    public virtual IReadOnlyCollection<Student> Students => _students.AsReadOnly();
 
     private Advisor() { }
 
@@ -55,6 +56,21 @@ public class Advisor : BaseEntity
 
         DepartmentId = departmentId;
         UpdateTimestamp();
+    }
+
+    #endregion
+
+    #region Student Management
+
+    public void AddStudent(Student student)
+    {
+        if (student == null) throw new ArgumentNullException(nameof(student));
+
+        if (!_students.Any(s => s.Id == student.Id))
+        {
+            _students.Add(student);
+            student.AssignAdvisor(Id);
+        }
     }
 
     #endregion

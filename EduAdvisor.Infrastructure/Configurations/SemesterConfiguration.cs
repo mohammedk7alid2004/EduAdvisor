@@ -37,9 +37,8 @@ public class SemesterConfiguration : IEntityTypeConfiguration<Semester>
         builder.Property(x => x.IsRegistrationOpen)
             .IsRequired();
 
-        builder.HasMany(x => x.Enrollments)
-            .WithOne(x => x.Semester)
-            .HasForeignKey(x => x.SemesterId)
-            .OnDelete(DeleteBehavior.NoAction);
+        builder.Property(x => x.StandardSemesterNumber)
+            .IsRequired();
+
     }
 }

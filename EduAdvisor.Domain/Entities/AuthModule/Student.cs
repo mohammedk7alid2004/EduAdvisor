@@ -13,9 +13,9 @@ public class Student : BaseEntity
     public Guid? AdvisorId { get; private set; }
     public decimal GPA { get; private set; }
 
-    public User User { get; private set; } = default!;
-    public Department Department { get; private set; } = default!;
-    public Advisor? Advisor { get; private set; }
+    public virtual User User { get; private set; } = default!;
+    public virtual Department Department { get; private set; } = default!;
+    public virtual Advisor? Advisor { get; private set; }
 
     private Student() { }
 
