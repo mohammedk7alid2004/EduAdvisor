@@ -3,6 +3,7 @@ using EduAdvisor.Application.DTO.AuthModules;
 using EduAdvisor.Application.Interfaces.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace EduAdvisor.Application.Handlers.AuthModules;
@@ -10,6 +11,7 @@ namespace EduAdvisor.Application.Handlers.AuthModules;
 public class LoginCommandHandler(
     UserManager<User> userManager,
     ITokenService tokenService,
+    IApplicationDbContext context,
     IStringLocalizer localizer)
     : IRequestHandler<LoginCommand, Result<LoginResponseDto>>
 {
@@ -40,17 +42,27 @@ public class LoginCommandHandler(
 
         #endregion
 
+        #region Validate Advisor Status
+
+        var roles = await userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? string.Empty;
+
+        if (role == "Advisor")
+        {
+            var isPending = await context.Advisors
+                .AsNoTracking()
+                .AnyAsync(a => a.UserId == user.Id && a.IsPending, cancellationToken);
+
+            if (isPending)
+                return Result<LoginResponseDto>.Forbidden(localizer["AdvisorPendingApproval"]);
+        }
+
+        #endregion
+
         #region Generate Tokens
 
         var jwt = await tokenService.GenerateJwtToken(user);
         var refreshToken = await tokenService.GenerateRefreshToken(user);
-
-        #endregion
-
-        #region Get Role
-
-        var roles = await userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? string.Empty;
 
         #endregion
 

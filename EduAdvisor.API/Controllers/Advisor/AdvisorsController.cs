@@ -29,4 +29,21 @@ public class AdvisorsController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(query, cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
+    [HttpPatch("approve/{id}")]
+    public async Task<IActionResult> Approve(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ApproveAdvisorCommand(id), cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpGet("pending")]
+    public async Task<IActionResult> GetPending(
+    [FromQuery] GetPendingAdvisorsQuery query,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(query, cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
 }
