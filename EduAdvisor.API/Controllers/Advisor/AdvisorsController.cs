@@ -1,0 +1,32 @@
+﻿using EduAdvisor.Application.Queries.Users;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace EduAdvisor.API.Controllers.Advisor;
+
+[ApiController]
+[Route("api/v1/[controller]")]
+[Authorize]
+public class AdvisorsController(IMediator mediator) : ControllerBase
+{
+    [HttpPost("{advisorId}/assign-students")]
+    public async Task<IActionResult> AssignStudents(
+        Guid advisorId,
+        [FromBody] AssignStudentsToAdvisorCommand command,
+        CancellationToken cancellationToken)
+    {
+        command.AdvisorId = advisorId;
+        var result = await mediator.Send(command, cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpGet("my-students")]
+    [Authorize(Roles = "Advisor")]
+    public async Task<IActionResult> GetMyStudents(
+        [FromQuery] GetAdvisorStudentsQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(query, cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
+}

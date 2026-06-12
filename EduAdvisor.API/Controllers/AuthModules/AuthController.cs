@@ -109,4 +109,5 @@ public class AuthController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new ValidateTokenCommand());
         return StatusCode(result.StatusCode, result);
     }
+
 }
