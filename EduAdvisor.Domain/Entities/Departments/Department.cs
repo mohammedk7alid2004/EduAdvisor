@@ -1,15 +1,20 @@
 ﻿using EduAdvisor.Domain.Entities.Base;
 using EduAdvisor.Domain.Entities.Faculties;
+using EduAdvisor.Domain.Entities.AcademicModule;
 
 namespace EduAdvisor.Domain.Entities.Departments;
 
 public sealed class Department : BaseEntity
 {
+    private readonly List<Course> _courses = new();
+
     public string Name { get; private set; } = string.Empty;
     public string? Code { get; private set; }
     public string? Description { get; private set; }
     public Guid FacultyId { get; private set; }
     public Faculty Faculty { get; private set; } = default!;
+
+    public IReadOnlyCollection<Course> Courses => _courses.AsReadOnly();
 
     private Department() { }
 

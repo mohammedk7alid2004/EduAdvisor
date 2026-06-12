@@ -35,21 +35,18 @@ public class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollment>
         builder.Property(x => x.GradedAt)
             .IsRequired(false);
 
-        builder.HasIndex(x => new { x.StudentId, x.SubjectId, x.SemesterId })
-            .IsUnique();
-
         builder.HasOne(x => x.Student)
             .WithMany()
             .HasForeignKey(x => x.StudentId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.HasOne(x => x.Subject)
-            .WithMany(x => x.Enrollments)
-            .HasForeignKey(x => x.SubjectId)
+        builder.HasOne(x => x.Course)
+            .WithMany()
+            .HasForeignKey(x => x.CourseId)
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasOne(x => x.Semester)
-            .WithMany(x => x.Enrollments)
+            .WithMany()
             .HasForeignKey(x => x.SemesterId)
             .OnDelete(DeleteBehavior.NoAction);
 

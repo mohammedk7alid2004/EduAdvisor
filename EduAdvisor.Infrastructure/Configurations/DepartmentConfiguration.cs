@@ -30,5 +30,14 @@ public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
         builder.Property(x => x.Description)
             .HasMaxLength(1000)
             .IsRequired(false);
+
+        builder.HasMany(x => x.Courses)
+            .WithOne(x => x.Department)
+            .HasForeignKey(x => x.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Navigation(x => x.Courses)
+            .HasField("_courses")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

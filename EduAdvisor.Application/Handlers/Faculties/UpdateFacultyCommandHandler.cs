@@ -70,6 +70,6 @@ public sealed class UpdateFacultyCommandHandler(IApplicationDbContext db)
         new(f.Id, f.UniversityId, f.University.Name,
             f.Name, f.Abbreviation, f.Description,
             f.Email, f.Website, f.LogoUrl,
-            f.IsActive, f.Departments.Count, f.Subjects.Count,
+            f.IsActive, f.Departments.Count,
             f.CreatedAt, f.UpdatedAt);
 }

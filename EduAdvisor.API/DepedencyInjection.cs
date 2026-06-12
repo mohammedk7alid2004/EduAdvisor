@@ -58,15 +58,19 @@ namespace Api
         private static IServiceCollection AddSwaggerWithAuth(this IServiceCollection services)
         {
             services.AddEndpointsApiExplorer();
-
             services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "Authentication Module API",
-                    Version = "v1"
+                    Title = "EduAdvisor API",
+                    Version = "v1",
+                    Description = "Academic Advising Platform API",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "EduAdvisor Team",
+                        Email = "mohammedk7alid2004@gmail.com"
+                    }
                 });
-
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
@@ -78,24 +82,22 @@ namespace Api
                 });
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
                 {
+                    Reference = new OpenApiReference
                     {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
                     }
+                },
+                Array.Empty<string>()
+            }
+        });
 
-                });
                 options.OperationFilter<AcceptLanguageHeaderOperationFilter>();
-
                 options.CustomSchemaIds(type => type.FullName);
-           
             });
 
             return services;

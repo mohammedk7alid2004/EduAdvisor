@@ -1,6 +1,5 @@
 ﻿using EduAdvisor.Domain.Entities.Base;
 using EduAdvisor.Domain.Entities.Departments;
-using EduAdvisor.Domain.Entities.Subjects;
 using EduAdvisor.Domain.Entities.Universities;
 
 namespace EduAdvisor.Domain.Entities.Faculties;
@@ -21,8 +20,7 @@ public sealed class Faculty : BaseEntity
     private readonly List<Department> _departments = [];
     public IReadOnlyCollection<Department> Departments => _departments;
 
-    private readonly List<Subject> _subjects = [];
-    public IReadOnlyCollection<Subject> Subjects => _subjects;
+
 
     private Faculty() { }
 

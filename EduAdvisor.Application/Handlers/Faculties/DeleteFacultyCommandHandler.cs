@@ -15,7 +15,6 @@ public sealed class DeleteFacultyCommandHandler(IApplicationDbContext db)
 
         var faculty = await db.Faculties
             .Include(x => x.Departments)
-            .Include(x => x.Subjects)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         if (faculty is null)
@@ -29,9 +28,7 @@ public sealed class DeleteFacultyCommandHandler(IApplicationDbContext db)
             return Result<bool>.Failure(
                 $"Cannot delete faculty with {faculty.Departments.Count} department(s). Remove them first.", 409);
 
-        if (faculty.Subjects.Count > 0)
-            return Result<bool>.Failure(
-                $"Cannot delete faculty with {faculty.Subjects.Count} subject(s). Remove them first.", 409);
+
 
         #endregion
 

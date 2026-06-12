@@ -64,7 +64,7 @@ public sealed class CreateFacultyCommandHandler(IApplicationDbContext db)
         new(f.Id, f.UniversityId, universityName,
             f.Name, f.Abbreviation, f.Description,
             f.Email, f.Website, f.LogoUrl,
-            f.IsActive, f.Departments.Count, f.Subjects.Count,
+            f.IsActive, f.Departments.Count, 
             f.CreatedAt, f.UpdatedAt);
 }
 

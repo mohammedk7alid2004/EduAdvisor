@@ -1,9 +1,9 @@
+using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Entities.AuthModule;
 using EduAdvisor.Domain.Entities.Departments;
 using EduAdvisor.Domain.Entities.Enrollments;
 using EduAdvisor.Domain.Entities.Faculties;
 using EduAdvisor.Domain.Entities.RoleModule;
-using EduAdvisor.Domain.Entities.Subjects;
 using EduAdvisor.Domain.Entities.Universities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -30,8 +30,10 @@ public interface IApplicationDbContext
     DbSet<Department> Departments { get; set; }
     DbSet<University>Universities { get; set; }
     DbSet<Faculty> Faculties { get; set; }
-    DbSet<Subject>Subjects { get; set; } 
+    public DbSet<Course>Courses { get; set; }
+    DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
     DbSet<Enrollment> Enrollments { get; set; }
+
     #endregion
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

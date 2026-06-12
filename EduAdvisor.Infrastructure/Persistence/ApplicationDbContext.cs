@@ -1,5 +1,6 @@
 ﻿using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Domain.Base;
+using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Entities.AuthModule;
 using EduAdvisor.Domain.Entities.Base;
 using EduAdvisor.Domain.Entities.Departments;
@@ -7,7 +8,6 @@ using EduAdvisor.Domain.Entities.Enrollments;
 using EduAdvisor.Domain.Entities.Faculties;
 using EduAdvisor.Domain.Entities.RoleModule;
 using EduAdvisor.Domain.Entities.Semesters;
-using EduAdvisor.Domain.Entities.Subjects;
 using EduAdvisor.Domain.Entities.Universities;
 using EduAdvisor.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Http;
@@ -52,10 +52,9 @@ public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbConte
     #endregion
 
     #region DbSets - Subjects & Semesters
+    public DbSet<Course> Courses { get; set; }
+   public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
 
-    public DbSet<Subject> Subjects { get; set; }
-    public DbSet<SubjectPrerequisite> SubjectPrerequisites { get; set; }
-    public DbSet<SubjectOffering> SubjectOfferings { get; set; }
     public DbSet<Semester> Semesters { get; set; }
 
     #endregion

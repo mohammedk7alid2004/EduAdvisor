@@ -1,6 +1,7 @@
 ﻿using EduAdvisor.Application.Commands.Departments;
 using EduAdvisor.Application.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace EduAdvisor.Application.Handlers.Departments;
@@ -32,11 +33,11 @@ public class DeleteDepartmentCommandHandler(
         if (hasStudents)
             return Result<bool>.Failure(localizer["DepartmentHasStudents"], 400);
 
-        var hasSubjects = await context.Subjects
+        var hasCourses = await context.Courses
             .AnyAsync(x => x.DepartmentId == request.Id, cancellationToken);
 
-        if (hasSubjects)
-            return Result<bool>.Failure(localizer["DepartmentHasSubjects"], 400);
+        if (hasCourses)
+            return Result<bool>.Failure(localizer["DepartmentHasCourses"], 400);
 
         #endregion
 

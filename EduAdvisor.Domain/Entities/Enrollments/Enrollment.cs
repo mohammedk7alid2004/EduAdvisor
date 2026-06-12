@@ -1,7 +1,7 @@
 ﻿using EduAdvisor.Domain.Entities.AuthModule;
 using EduAdvisor.Domain.Entities.Base;
 using EduAdvisor.Domain.Entities.Semesters;
-using EduAdvisor.Domain.Entities.Subjects;
+using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Enums.University;
 
 namespace EduAdvisor.Domain.Entities.Enrollments;
@@ -9,7 +9,7 @@ namespace EduAdvisor.Domain.Entities.Enrollments;
 public sealed class Enrollment : BaseEntity
 {
     public Guid StudentId { get; private set; }
-    public Guid SubjectId { get; private set; }
+    public Guid CourseId { get; private set; }
     public Guid SemesterId { get; private set; }
     public decimal? Grade { get; private set; }
     public string? RejectionReason { get; private set; }
@@ -20,25 +20,25 @@ public sealed class Enrollment : BaseEntity
     public DateTime? GradedAt { get; private set; }
 
     public Student Student { get; private set; } = default!;
-    public Subject Subject { get; private set; } = default!;
+    public Course Course { get; private set; } = default!;
     public Semester Semester { get; private set; } = default!;
     public Advisor? ReviewedByAdvisor { get; private set; }
 
     private Enrollment() { }
 
-    public Enrollment(Guid studentId, Guid subjectId, Guid semesterId)
+    public Enrollment(Guid studentId, Guid courseId, Guid semesterId)
     {
         if (studentId == Guid.Empty)
             throw new ArgumentException("StudentId is required.", nameof(studentId));
 
-        if (subjectId == Guid.Empty)
-            throw new ArgumentException("SubjectId is required.", nameof(subjectId));
+        if (courseId == Guid.Empty)
+            throw new ArgumentException("CourseId is required.", nameof(courseId));
 
         if (semesterId == Guid.Empty)
             throw new ArgumentException("SemesterId is required.", nameof(semesterId));
 
         StudentId = studentId;
-        SubjectId = subjectId;
+        CourseId = courseId;
         SemesterId = semesterId;
         Status = EnrollmentStatus.Pending;
     }

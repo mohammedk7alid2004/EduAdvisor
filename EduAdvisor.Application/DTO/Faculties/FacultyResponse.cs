@@ -12,7 +12,6 @@ public sealed record FacultyResponse(
  string? LogoUrl,
  bool IsActive,
  int DepartmentCount,
- int SubjectCount,
  DateTime CreatedAt,
  DateTime? UpdatedAt
 );

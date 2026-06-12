@@ -27,7 +27,6 @@ public sealed class GetFacultyByIdQueryHandler(IApplicationDbContext db)
                 x.LogoUrl,
                 x.IsActive,
                 x.Departments.Count,
-                x.Subjects.Count,
                 x.CreatedAt,
                 x.UpdatedAt))
             .FirstOrDefaultAsync(cancellationToken);
