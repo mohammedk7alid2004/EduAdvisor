@@ -15,7 +15,7 @@ public sealed class RegistrationRequest : BaseEntity
     public EnrollmentStatus Status { get; private set; }
     public string? Notes { get; private set; }
     public DateTime SubmittedAt { get; private set; }
-    public Guid? ReviewedByAdvisorId { get; private set; } // تم جعلها private set للحفاظ على الـ Encapsulation
+    public Guid? ReviewedByAdvisorId { get; private set; } 
 
     public Student Student { get; private set; } = default!;
     public Semester Semester { get; private set; } = default!;
