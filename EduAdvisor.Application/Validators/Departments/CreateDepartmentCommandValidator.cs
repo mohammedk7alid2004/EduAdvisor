@@ -8,18 +8,25 @@ public class CreateDepartmentCommandValidator : AbstractValidator<CreateDepartme
     public CreateDepartmentCommandValidator(IStringLocalizer localizer)
     {
         RuleFor(x => x.FacultyId)
-            .NotEmpty().WithMessage(localizer["FacultyIsRequired"]);
+            .NotEmpty()
+            .WithMessage(localizer["FacultyIsRequired"])
+            .NotEqual(Guid.Empty)
+            .WithMessage(localizer["InvalidFaculty"]);
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage(localizer["NameIsRequired"])
-            .MaximumLength(200).WithMessage(localizer["NameMaxLength"]);
+            .NotEmpty()
+            .WithMessage(localizer["NameIsRequired"])
+            .MaximumLength(200)
+            .WithMessage(localizer["NameMaxLength"]);
 
         RuleFor(x => x.Code)
-            .MaximumLength(20).WithMessage(localizer["CodeMaxLength"])
-            .When(x => x.Code is not null);
+            .MaximumLength(20)
+            .WithMessage(localizer["CodeMaxLength"])
+            .When(x => !string.IsNullOrWhiteSpace(x.Code));
 
         RuleFor(x => x.Description)
-            .MaximumLength(1000).WithMessage(localizer["DescriptionMaxLength"])
-            .When(x => x.Description is not null);
+            .MaximumLength(1000)
+            .WithMessage(localizer["DescriptionMaxLength"])
+            .When(x => !string.IsNullOrWhiteSpace(x.Description));
     }
 }
