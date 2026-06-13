@@ -5,7 +5,7 @@ using EduAdvisor.Application.Queries.CourseModules;
 using EduAdvisor.Domain.Enums.University;
 using Microsoft.EntityFrameworkCore;
 
-namespace EduAdvisor.Application.Features.Courses.Queries.GetAvailableCoursesForStudent;
+namespace EduAdvisor.Application.Handlers.CourseModules;
 
 public sealed class GetAvailableCoursesForStudentQueryHandler(
     IApplicationDbContext context,
