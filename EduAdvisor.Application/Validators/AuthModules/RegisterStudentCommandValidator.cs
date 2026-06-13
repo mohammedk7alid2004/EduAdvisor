@@ -17,28 +17,41 @@ public class RegisterStudentCommandValidator : AbstractValidator<RegisterStudent
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage(localizer["EmailIsRequired"])
-            .Matches(RegexPatterns.UniversityEmail).WithMessage(localizer["InvalidUniversityEmail"]);
+            .Matches(RegexPatterns.UniversityEmail)
+            .WithMessage(localizer["InvalidUniversityEmail"]);
 
         RuleFor(x => x.StudentCode)
-            .NotEmpty().WithMessage(localizer["StudentCodeIsRequired"]);
+            .NotEmpty()
+            .WithMessage(localizer["StudentCodeIsRequired"])
+            .MaximumLength(20)
+            .WithMessage(localizer["StudentCodeMaxLength"]);
 
         RuleFor(x => x.DepartmentId)
-            .NotEmpty().WithMessage(localizer["DepartmentIsRequired"]);
+            .NotEmpty()
+            .WithMessage(localizer["DepartmentIsRequired"])
+            .NotEqual(Guid.Empty)
+            .WithMessage(localizer["InvalidDepartment"]);
 
         RuleFor(x => x.NationalId)
-            .NotEmpty().WithMessage(localizer["NationalIdIsRequired"]);
-
+     .NotEmpty()
+     .WithMessage(localizer["NationalIdIsRequired"])
+     .Matches(@"^\d{14}$")
+     .WithMessage(localizer["NationalIdMustBe14Digits"]);
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage(localizer["PasswordIsRequired"])
-            .Matches(RegexPatterns.Password).WithMessage(localizer["PasswordInvalid"]);
+            .NotEmpty()
+            .WithMessage(localizer["PasswordIsRequired"])
+            .Matches(RegexPatterns.Password)
+            .WithMessage(localizer["PasswordInvalid"]);
 
         RuleFor(x => x.ConfirmPassword)
-            .Equal(x => x.Password).WithMessage(localizer["PasswordsDoNotMatch"]);
+            .Equal(x => x.Password)
+            .WithMessage(localizer["PasswordsDoNotMatch"]);
 
         RuleFor(x => x.ProfileImage)
             .Must(file => file == null || file.Length > 0)
             .WithMessage(localizer["InvalidImageFile"])
-            .Must(file => file == null ||
+            .Must(file =>
+                file == null ||
                 Regex.IsMatch(file.FileName, RegexPatterns.ImageFilePattern))
             .WithMessage(localizer["InvalidImageFormat"])
             .When(x => x.ProfileImage is not null);
