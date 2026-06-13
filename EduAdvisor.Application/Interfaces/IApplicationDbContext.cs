@@ -36,7 +36,8 @@ public interface IApplicationDbContext
     DbSet<Enrollment> Enrollments { get; set; }
     DbSet<Semester> Semesters {  get; set; }
     DbSet<CourseAcademicPlan> CourseAcademicPlans {  get; set; }
-
+    
+    DbSet<SemesterCourse> SemesterCourses { get; set; }
     #endregion
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

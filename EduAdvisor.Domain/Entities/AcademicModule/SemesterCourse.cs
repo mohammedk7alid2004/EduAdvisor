@@ -21,4 +21,13 @@ public  class SemesterCourse : BaseEntity
         SemesterId = semesterId;
         CourseAcademicPlanId = courseAcademicPlanId;
     }
+    public void Update(Guid semesterId, Guid courseAcademicPlanId)
+    {
+        if (semesterId == Guid.Empty) throw new ArgumentException("SemesterId is required.");
+        if (courseAcademicPlanId == Guid.Empty) throw new ArgumentException("CourseAcademicPlanId is required.");
+
+        SemesterId = semesterId;
+        CourseAcademicPlanId = courseAcademicPlanId;
+        UpdateTimestamp();
+    }
 }
