@@ -4,6 +4,7 @@ using EduAdvisor.Domain.Entities.Departments;
 using EduAdvisor.Domain.Entities.Enrollments;
 using EduAdvisor.Domain.Entities.Faculties;
 using EduAdvisor.Domain.Entities.RoleModule;
+using EduAdvisor.Domain.Entities.Semesters;
 using EduAdvisor.Domain.Entities.Universities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,8 @@ public interface IApplicationDbContext
     public DbSet<Course>Courses { get; set; }
     DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
     DbSet<Enrollment> Enrollments { get; set; }
+    DbSet<Semester> Semesters {  get; set; }
+    DbSet<CourseAcademicPlan> CourseAcademicPlans {  get; set; }
 
     #endregion
 

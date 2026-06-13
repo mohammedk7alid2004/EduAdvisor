@@ -26,4 +26,16 @@ public  class CourseAcademicPlan : BaseEntity
         StandardSemester = standardSemester;
         DepartmentId = departmentId;
     }
+    public void Update(Guid courseId, int level, int standardSemester, Guid? departmentId)
+    {
+        if (courseId == Guid.Empty) throw new ArgumentException("CourseId is required.");
+        if (level < 1 || level > 4) throw new ArgumentException("Invalid academic level.");
+        if (standardSemester < 1 || standardSemester > 2) throw new ArgumentException("Invalid standard semester.");
+
+        CourseId = courseId;
+        Level = level;
+        StandardSemester = standardSemester;
+        DepartmentId = departmentId;
+        UpdateTimestamp();
+    }
 }

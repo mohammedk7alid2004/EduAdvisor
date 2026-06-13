@@ -56,6 +56,8 @@ public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbConte
    public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
 
     public DbSet<Semester> Semesters { get; set; }
+    public DbSet<CourseAcademicPlan> CourseAcademicPlans { get; set; }
+
 
     #endregion
 

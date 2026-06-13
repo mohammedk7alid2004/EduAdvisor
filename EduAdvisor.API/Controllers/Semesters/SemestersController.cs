@@ -1,19 +1,19 @@
-﻿using EduAdvisor.Application.Commands.CourseModules;
-using EduAdvisor.Application.Queries.CourseModules;
+﻿using EduAdvisor.Application.Commands.Semesters;
+using EduAdvisor.Application.Queries.Semesters;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace EduAdvisor.API.Controllers;
+namespace EduAdvisor.API.Controllers.Semesters;
 
 [ApiController]
 [Route("api/v1/[controller]")]
 [Authorize]
-public class CoursesController(IMediator mediator) : ControllerBase
+public class SemestersController(IMediator mediator) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Create(
-        [FromBody] CreateCourseCommand command,
+        [FromBody] CreateSemesterCommand command,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
@@ -23,30 +23,40 @@ public class CoursesController(IMediator mediator) : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
-        [FromBody] UpdateCourseCommand command,
+        [FromBody] UpdateSemesterCommand command,
         CancellationToken cancellationToken)
     {
-        command = command with { CourseId = id };
+        command = command with { SemesterId = id };
         var result = await mediator.Send(command, cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
 
     [HttpDelete]
     public async Task<IActionResult> Delete(
-        [FromBody] DeleteCoursesCommand command,
+        [FromBody] DeleteSemestersCommand command,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPatch("toggle-status/{id}")]
-    public async Task<IActionResult> ToggleStatus(
+    [HttpPatch("toggle-activation/{id}")]
+    public async Task<IActionResult> ToggleActivation(
         Guid id,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new ToggleCourseStatusCommand(id), cancellationToken);
+            new ToggleSemesterActivationCommand(id), cancellationToken);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPatch("toggle-registration/{id}")]
+    public async Task<IActionResult> ToggleRegistration(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ToggleSemesterRegistrationCommand(id), cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
 
@@ -56,21 +66,13 @@ public class CoursesController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new GetCourseByIdQuery(id), cancellationToken);
+            new GetSemesterByIdQuery(id), cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] GetAllCoursesQuery query,
-        CancellationToken cancellationToken)
-    {
-        var result = await mediator.Send(query, cancellationToken);
-        return StatusCode(result.StatusCode, result);
-    }
-    [HttpGet("select")]
-    public async Task<IActionResult> GetSelect(
-        [FromQuery] GetCoursesSelectQuery query,
+        [FromQuery] GetAllSemestersQuery query,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(query, cancellationToken);
