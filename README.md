@@ -2,292 +2,84 @@
 
 <img src="https://img.shields.io/badge/EduAdvisor-Intelligent%20Academic%20Platform-1a3c6e?style=for-the-badge&logo=graduation-cap&logoColor=white" alt="EduAdvisor"/>
 
-# 🎓 EduAdvisor
-### Intelligent Academic Advising & Recommendation Platform
+### 🎓 Intelligent Academic Advising & Recommendation Platform
+*Empowering educational pathways through data-driven mentor guidance and automated intelligence.*
 
-> Bridging the gap between students and academic excellence through AI-powered guidance.
+[![Target Framework](https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Architecture Pattern](https://img.shields.io/badge/Architecture-Clean%20%2B%20CQRS-007acc?style=for-the-badge&logo=blueprint&logoColor=white)](#-architecture)
+[![Database Infrastructure](https://img.shields.io/badge/SQL%20Server-Enterprise-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/)
-[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-Web%20API-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/apps/aspnet)
-[![Entity Framework](https://img.shields.io/badge/Entity%20Framework-Core-512BD4?style=flat-square&logo=dotnet)](https://docs.microsoft.com/ef/)
-[![SQL Server](https://img.shields.io/badge/SQL%20Server-Database-CC2927?style=flat-square&logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
-[![SignalR](https://img.shields.io/badge/SignalR-Real--Time-512BD4?style=flat-square&logo=dotnet)](https://dotnet.microsoft.com/apps/aspnet/signalr)
-[![Flutter](https://img.shields.io/badge/Flutter-Mobile-02569B?style=flat-square&logo=flutter)](https://flutter.dev/)
-[![React](https://img.shields.io/badge/React-Web-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
-
-**Fayoum University — Faculty of Computers & Artificial Intelligence — 2026**
-
-</div>
+**Fayoum University — Faculty of Computers & Artificial Intelligence — Graduation Project 2026**
 
 ---
+
+[🌐 Live API Documentation](https://eduadvisor.runasp.net/swagger) • [📱 Mobile App Repository](#) • [💻 Web Dashboard Repos](#)
+
+</div>
 
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Configuration](#-configuration)
-- [API Endpoints](#-api-endpoints)
-- [Team](#-team)
+- [📌 Overview](#-overview)
+- [✨ Core Capabilities](#-core-capabilities)
+- [🛠️ Technical Ecosystem](#%EF%B8%8F-technical-ecosystem)
+- [🏗️ Architectural Blueprint](#%EF%B8%8F-architectural-blueprint)
+- [📁 Layered Project Directory](#-project-structure)
+- [🚀 Local Deployment & Getting Started](#-getting-started)
+- [⚙️ Environment Configuration](#%EF%B8%8F-configuration)
+- [📡 API Gateway Specification](#-api-endpoints)
+- [👥 Engineering Team](#-team)
 
 ---
 
-## 🌟 Overview
+## 📌 Overview
 
-**EduAdvisor** is a comprehensive intelligent academic advising platform designed to facilitate effective academic guidance between students and academic mentors at Fayoum University. The system leverages AI-driven recommendations, real-time communication, and smart analytics to support students in their academic journey.
+**EduAdvisor** is an enterprise-grade academic advising ecosystem engineered specifically for the credit-hour system constraints at Fayoum University. By migrating legacy manual verification models into an automated hub, it dynamically minimizes advisory backlogs, prevents prerequisite sequence failures, and tracks graduation eligibility indexes in real time.
 
-### The Problem We Solve
+### System Solution Mapping
 
-| Challenge | Our Solution |
-|-----------|-------------|
-| Students struggle to select suitable courses | AI-powered Course Recommendation Engine |
-| Limited access to academic advisors | 24/7 Intelligent Chatbot Assistant |
-| Manual and fragmented advising processes | Centralized Digital Platform |
-| No real-time communication tools | SignalR-powered Live Chat |
-| Lack of academic performance insights | Interactive Analytics Dashboard |
+| Legacy Operational Bottleneck | EduAdvisor Intelligent Engine Paradigm |
+| :--- | :--- |
+| High student-to-advisor ratios leading to course mapping errors. | **Hybrid ML Recommendation Engine:** Resolves optimal course paths based on historical GPA metrics and strict prerequisite validations. |
+| Fragmented cross-communication channels & late alert updates. | **SignalR Live Mesh:** Instant notification framework and direct mentor-to-student low-latency chat routing. |
+| Inflexible monolithic systems causing registration lockouts. | **CQRS Architecture Architecture:** Separates query loads from strict transactional write logs to support elastic throughput during registration weeks. |
 
 ---
 
-## ✨ Features
+## ✨ Core Capabilities
 
-### 👨‍🎓 For Students
-- 🤖 **AI Course Recommendations** — Personalized course suggestions based on GPA, completed credits, and prerequisites
-- 📊 **Academic Dashboard** — Visual GPA trends, progress tracking, and risk detection
-- 💬 **Chatbot Support** — Instant answers about courses, prerequisites, and registration
-- 🗺️ **Track Suggestion** — Specialized academic pathway recommendations
-- 🔔 **Smart Notifications** — Real-time alerts for registration status and advisor messages
+### 👨‍🎓 Student Ecosystem
+- **AI-Driven Course Orchestration:** Suggests optimal credit loads dynamically adjusted to the student’s cumulative GPA and remaining core plans.
+- **Visual Analytics Dashboard:** Real-time GPA projection tracking, prerequisite dependency maps, and risk factor flags for warning hours.
+- **NLP Cognitive Assistant:** 24/7 localized support bot addressing questions about internal university bylaws, registration timelines, and cross-course requirements.
+- **Academic Pathway Predictor:** Recommends specialized tracks based on historical performance vectors in relevant foundational modules.
 
-### 👨‍🏫 For Advisors
-- 👥 **Student Management** — View academic history, status, and enrolled courses
-- ✅ **Course Approval** — Approve or reject student course registration requests
-- 📝 **Custom Recommendations** — Override or enhance AI-generated suggestions
-- 📈 **Performance Analytics** — Monitor student progress and generate reports
+### 👨‍🏫 Mentor Portal
+- **Consolidated Student Tracking Profiles:** High-fidelity view of assignees' complete timelines, transcripts, and registration histories.
+- **Workflow Approvals Grid:** One-click approval pipelines for custom credit overrides, tracking adjustments, and final schedule validations.
+- **Performance Analytics Matrix:** Early-warning tracking filters isolating students falling below standard retention indexes.
 
-### 🔧 For Administrators
-- 🏛️ **System Management** — Manage universities, faculties, departments, and semesters
-- 👤 **User Management** — Create and manage student and advisor accounts
-- ⚙️ **Recommendation Engine Config** — Configure AI rules and course prerequisites
-- 🔗 **Database Integration** — Sync with university's official academic database
+### ⚙️ Institutional Governance
+- **Academic Plan Configurations:** Micro-management tools for universities, branch faculties, active semesters, and complex multi-tiered course prerequisite dependencies.
+- **Granular RBAC System:** Claim-based custom authorization structures to secure identity assertions between system operators, registrars, and advisors.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technical Ecosystem
 
-### Backend
-```
-ASP.NET Core 9.0          — Web API Framework
-Entity Framework Core 9   — ORM & Database Access
-CQRS + MediatR            — Clean Architecture Pattern
-SignalR                   — Real-Time Communication
-JWT Bearer                — Authentication & Authorization
-MailKit / MimeKit         — Email Service
-FluentValidation          — Request Validation
-SQL Server                — Primary Database
-```
+### Backend Architecture
+* **Core Framework:** ASP.NET Core 9.0 Web API (Enterprise Edition Pipeline)
+* **Data Access Layer:** Entity Framework Core 9.0 (LINQ Expressions, Compilable Compiled Queries, Explicit Eager Loading)
+* **Message Bus & MediatR:** Internal In-Memory Command/Query decoupling for strict boundary insulation.
+* **Real-Time Pipeline:** SignalR Hub Topology using highly cohesive WebSockets fallbacks.
+* **Security & Token Handler:** Cryptographically signed JWT Identity tokens utilizing custom claim assertions.
+* **Validation Subsystem:** FluentValidation pipeline interception via generic MediatR `IPipelineBehavior` pipelines.
 
-### Frontend
-```
-Flutter (Dart)            — Cross-Platform Mobile App
-React.js                  — Web Application
-MVVM + Bloc (Cubit)       — State Management
-REST APIs                 — Backend Integration
-```
-
-### AI & ML
-```
-Recommendation Engine     — Hybrid Rule-Based + ML Model
-NLP Chatbot               — Natural Language Processing
-Python ML Libraries       — Model Training & Evaluation
-```
+### Client Interfaces
+* **Cross-Platform Mobile:** Flutter (Dart Framework utilizing Bloc/Cubit cleanly segmented states).
+* **Administrative Web Hub:** React.js Dashboard tailored with custom scannable telemetry hooks.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architectural Blueprint
 
-The backend follows **Clean Architecture** with **CQRS Pattern**:
-
-```
-EduAdvisor/
-├── EduAdvisor.API              # Presentation Layer (Controllers, Middlewares)
-├── EduAdvisor.Application      # Application Layer (Commands, Queries, Handlers)
-├── EduAdvisor.Domain           # Domain Layer (Entities, Value Objects)
-└── EduAdvisor.Infrastructure   # Infrastructure Layer (DB, Email, File Storage)
-```
-
-### CQRS Flow
-```
-Request → Controller → MediatR → Command/Query Handler → Repository → Database
-                                        ↓
-                               Validation (FluentValidation)
-                                        ↓
-                               Response → DTO → Client
-```
-
----
-
-## 📁 Project Structure
-
-```
-EduAdvisor.API/
-├── Controllers/
-│   └── AuthModules/
-├── Middlewares/
-│   └── ExceptionHandlingMiddleware.cs
-└── EmailTemplates/
-    ├── EmailConfirmation.html
-    └── ForgetPassword.html
-
-EduAdvisor.Application/
-├── Commands/
-│   └── AuthModules/
-├── Queries/
-├── Handlers/
-│   └── AuthModules/
-├── Behaviors/
-│   └── ValidationBehavior.cs
-├── Interfaces/
-└── DTO/
-
-EduAdvisor.Domain/
-├── Entities/
-│   └── AuthModule/
-│       ├── User.cs
-│       └── Student.cs
-└── Common/
-
-EduAdvisor.Infrastructure/
-├── Persistence/
-│   └── ApplicationDbContext.cs
-├── Services/
-│   ├── Email/
-│   │   ├── EmailService.cs
-│   │   ├── EmailBodyBuilder.cs
-│   │   └── MailSettings.cs
-│   ├── AuthModules/
-│   ├── File/
-│   └── Hasher/
-├── Repositories/
-├── Migrations/
-└── EmailTemplates/
-    ├── EmailConfirmation.html
-    └── ForgetPassword.html
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- [SQL Server](https://www.microsoft.com/sql-server) (LocalDB or full instance)
-- [Visual Studio 2022](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
-
-### Installation
-
-**1. Clone the repository**
-```bash
-git clone https://github.com/mohammedk7alid2004/EduAdvisor.git
-cd EduAdvisor
-```
-
-**2. Restore dependencies**
-```bash
-dotnet restore
-```
-
-**3. Configure `appsettings.json`** *(see [Configuration](#-configuration))*
-
-**4. Apply database migrations**
-```bash
-cd EduAdvisor.API
-dotnet ef database update
-```
-
-**5. Run the application**
-```bash
-dotnet run
-```
-
-**6. Open Swagger UI**
-```
-https://localhost:{port}/swagger
-```
-
----
-
-## ⚙️ Configuration
-
-Add the following to `appsettings.json`:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=.;Database=EduAdvisorDb;Trusted_Connection=True;TrustServerCertificate=True"
-  },
-  "MailSettings": {
-    "Mail": "your-email@gmail.com",
-    "DisplayName": "EduAdvisor",
-    "Password": "your-app-password",
-    "Host": "smtp.gmail.com",
-    "Port": 587
-  },
-  "JwtSettings": {
-    "Key": "your-secret-key-here",
-    "Issuer": "EduAdvisor",
-    "Audience": "EduAdvisorUsers",
-    "ExpiryInDays": 7
-  }
-}
-```
-
-> ⚠️ **Important:** For Gmail, use an [App Password](https://myaccount.google.com/apppasswords), not your regular password. Never commit real credentials to Git.
-
----
-
-## 📡 API Endpoints
-
-### Auth Module
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/register/student` | Register new student |
-| `POST` | `/api/auth/login` | User login |
-| `POST` | `/api/auth/confirm-email` | Confirm email with OTP |
-| `POST` | `/api/auth/resend-confirmation` | Resend confirmation OTP |
-| `POST` | `/api/auth/forget-password` | Request password reset |
-| `POST` | `/api/auth/reset-password` | Reset password with OTP |
-
----
-
-## 👥 Team
-
-| Name | Role |
-|------|------|
-| **Mohammed Khaled Mohamed Farag** | Team Leader & Backend Developer |
-| **Mahmoud Waleed Mahmoud** | Backend Developer |
-| **Mohamed Ahmed Gamal** | Frontend Developer |
-| **Ahmed Ragb** | Frontend Developer |
-| **Mostafa Ata** | Machine Learning Engineer |
-| **Eman Ramadan Abdelzaher** | Database Administrator |
-| **Aliaa Mohamed Hamady** | Project Reporter & UI/UX |
-
-### Supervised By
-- **Dr. Hebatulla M. Nabil**
-- **Eng. Tasneem Mohammed**
-
----
-
-## 📄 License
-
-This project was developed as a graduation project at **Fayoum University — Faculty of Computers & Artificial Intelligence — 2026**.
-
----
-
-<div align="center">
-
-Made with ❤️ by the EduAdvisor Team — Fayoum University 2026
-
-</div>
+The backend engine strictly conforms to **Clean Architecture** combined with **CQRS (Command Query Responsibility Segregation)** design principles to ensure complete database layer insulation from core domain business rules.
