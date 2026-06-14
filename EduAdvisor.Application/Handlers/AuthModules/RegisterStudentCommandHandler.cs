@@ -107,7 +107,7 @@ public class RegisterStudentCommandHandler(
 
         #region Create Student Profile
 
-        var student = new Student(user.Id, request.StudentCode, request.DepartmentId);
+        var student = new Domain.Entities.AuthModule.Student(user.Id, request.StudentCode, request.DepartmentId);
         await context.Students.AddAsync(student, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
