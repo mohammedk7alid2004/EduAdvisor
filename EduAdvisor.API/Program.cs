@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders; // <-- أضفنا هذا الـ Namespace للتعامل مع المجلد المخصص
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +56,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 var supportedCultures = new[] { "en", "ar" };
-
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
     DefaultRequestCulture = new RequestCulture("en"),
@@ -68,7 +68,6 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 });
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -77,12 +76,31 @@ app.UseSwaggerUI(c =>
 });
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
-
 app.UseHttpsRedirection();
+
+// ==========================================
+// ==========================================
+
+app.UseStaticFiles();
+
+var profileImagesPath = Path.Combine(builder.Environment.ContentRootPath, "profile-images");
+if (!Directory.Exists(profileImagesPath))
+{
+    Directory.CreateDirectory(profileImagesPath);
+}
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(profileImagesPath),
+    RequestPath = "/profile-images"
+});
+
+// ==========================================
+
 app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();
