@@ -5,24 +5,22 @@ public record CurrentUserResponseDTO(
     string FullName,
     string Email,
     string? Phone,
+    string? ProfileImageUrl, 
     bool IsVerified,
     DateTime CreatedAt,
     string Role,
     StudentProfileDto? StudentProfile,
-    AdvisorProfileDto? AdvisorProfile
-);
+    AdvisorProfileDto? AdvisorProfile);
 
 public record StudentProfileDto(
     string StudentCode,
     string DepartmentName,
     decimal GPA,
     int CompletedHours,
-    int AcademicYear
-);
+    int AcademicYear);
 
 public record AdvisorProfileDto(
     string DepartmentName,
     bool IsPending,
     int StudentsCount,
-    int PendingRequestsCount
-);
+    int PendingRequestsCount);

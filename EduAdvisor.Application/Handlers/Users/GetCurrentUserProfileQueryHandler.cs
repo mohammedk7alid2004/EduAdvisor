@@ -1,5 +1,4 @@
-﻿// GetCurrentUserProfileQueryHandler.cs
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EduAdvisor.Application.DTO.User;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Queries.Users;
@@ -105,6 +104,7 @@ public class GetCurrentUserProfileQueryHandler(
             user.FullName,
             user.Email!,
             user.PhoneNumber,
+            user.ProfileImageUrl,
             user.EmailConfirmed,
             user.CreatedAt,
             role,

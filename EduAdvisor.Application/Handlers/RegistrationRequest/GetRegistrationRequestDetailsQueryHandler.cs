@@ -70,7 +70,8 @@ public sealed class GetRegistrationRequestDetailsQueryHandler(
 
             DepartmentName =
                 registrationRequest.Student.Department.Name,
-
+            StudentPhotoUrl =
+                registrationRequest.Student.User.ProfileImageUrl,
             AcademicYear =
                 registrationRequest.Student.AcademicYear,
 

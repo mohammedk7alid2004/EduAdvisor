@@ -2,6 +2,7 @@
 using EduAdvisor.Application.DTO.RegistrationRequest;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Queries.RegistrationRequests;
+using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Enums.University;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,7 +39,8 @@ public sealed class GetPendingRegistrationRequestsQueryHandler(
                 AcademicYear =
                     x.Student.AcademicYear,
 
-              
+                StudentPhotoUrl =
+                    x.Student.User.ProfileImageUrl,
 
                 SubmittedAt =
                     x.SubmittedAt,
