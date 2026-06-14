@@ -62,7 +62,7 @@ public sealed class SubmitRegistrationRequestCommandHandler(
 
         var registrationRequestId = Guid.NewGuid();
 
-        var registrationRequest = new RegistrationRequest(
+        var registrationRequest = new Domain.Entities.AcademicModule.RegistrationRequest(
             registrationRequestId,
             student.Id,
             activeSemester.Id);

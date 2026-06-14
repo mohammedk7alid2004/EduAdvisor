@@ -1,5 +1,6 @@
 ﻿using EduAdvisor.Application.Commands.Student;
 using EduAdvisor.Application.Queries.CourseModules;
+using EduAdvisor.Application.Queries.RegistrationRequests;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +29,16 @@ public class StudentsController(IMediator mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
+
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpGet("registration-requests")]
+    public async Task<IActionResult> GetMyRegistrationRequests(
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new GetMyRegistrationRequestsQuery(),
+            cancellationToken);
 
         return StatusCode(result.StatusCode, result);
     }
