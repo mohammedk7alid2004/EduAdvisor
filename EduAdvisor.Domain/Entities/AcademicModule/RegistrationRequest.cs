@@ -24,11 +24,13 @@ public sealed class RegistrationRequest : BaseEntity
 
     private RegistrationRequest() { }
 
-    public RegistrationRequest(Guid studentId, Guid semesterId, string? notes = null)
+    public RegistrationRequest(
+     Guid id,
+     Guid studentId,
+     Guid semesterId,
+     string? notes = null)
     {
-        if (studentId == Guid.Empty) throw new ArgumentException("StudentId is required.");
-        if (semesterId == Guid.Empty) throw new ArgumentException("SemesterId is required.");
-
+        Id = id;
         StudentId = studentId;
         SemesterId = semesterId;
         Notes = notes?.Trim();
@@ -42,7 +44,6 @@ public sealed class RegistrationRequest : BaseEntity
         _enrollments.Add(enrollment);
     }
 
-    // تعديل الـ Approve لاستقبال الـ AdvisorId صراحة وتوزيعه على المواد
     public void Approve(Guid advisorId)
     {
         if (advisorId == Guid.Empty) throw new ArgumentException("AdvisorId is required to approve the request.");

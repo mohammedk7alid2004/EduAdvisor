@@ -58,7 +58,7 @@ public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbConte
     public DbSet<Semester> Semesters { get; set; }
     public DbSet<CourseAcademicPlan> CourseAcademicPlans { get; set; }
     public DbSet<SemesterCourse> SemesterCourses { get; set; }
-
+public DbSet<RegistrationRequest> RegistrationRequests { get; set; }
 
 
     #endregion

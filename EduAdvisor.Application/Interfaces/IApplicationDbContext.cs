@@ -36,7 +36,7 @@ public interface IApplicationDbContext
     DbSet<Enrollment> Enrollments { get; set; }
     DbSet<Semester> Semesters {  get; set; }
     DbSet<CourseAcademicPlan> CourseAcademicPlans {  get; set; }
-    
+    DbSet<RegistrationRequest>RegistrationRequests { get; set; }
     DbSet<SemesterCourse> SemesterCourses { get; set; }
     #endregion
 
