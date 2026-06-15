@@ -9,9 +9,14 @@ public class Student : BaseEntity
     public string StudentCode { get; private set; } = string.Empty;
     public int AcademicYear { get; private set; }
     public int CompletedHours { get; private set; }
-    public Guid DepartmentId { get; private set; }
+
+   public Guid DepartmentId { get; private set; }
     public Guid? AdvisorId { get; private set; }
+
     public decimal GPA { get; private set; }
+
+    // Admin Override
+    public int? CustomMaxCreditHours { get; private set; }
 
     public virtual User User { get; private set; } = default!;
     public virtual Department Department { get; private set; } = default!;
@@ -19,7 +24,11 @@ public class Student : BaseEntity
 
     private Student() { }
 
-    public Student(string userId, string studentCode, Guid departmentId, int academicYear = 1)
+    public Student(
+        string userId,
+        string studentCode,
+        Guid departmentId,
+        int academicYear = 1)
     {
         if (string.IsNullOrWhiteSpace(userId))
             throw new ArgumentException("UserId is required.", nameof(userId));
@@ -31,7 +40,7 @@ public class Student : BaseEntity
             throw new ArgumentException("DepartmentId is required.", nameof(departmentId));
 
         if (academicYear <= 0)
-            throw new ArgumentOutOfRangeException(nameof(academicYear), "Academic year must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(academicYear));
 
         UserId = userId;
         StudentCode = studentCode.Trim();
@@ -55,7 +64,7 @@ public class Student : BaseEntity
     public void UpdateCompletedHours(int hours)
     {
         if (hours < 0)
-            throw new ArgumentOutOfRangeException(nameof(hours), "Completed hours cannot be negative.");
+            throw new ArgumentOutOfRangeException(nameof(hours));
 
         CompletedHours = hours;
         UpdateTimestamp();
@@ -64,7 +73,7 @@ public class Student : BaseEntity
     public void UpdateAcademicYear(int year)
     {
         if (year <= 0)
-            throw new ArgumentOutOfRangeException(nameof(year), "Academic year must be greater than zero.");
+            throw new ArgumentOutOfRangeException(nameof(year));
 
         AcademicYear = year;
         UpdateTimestamp();
@@ -73,7 +82,7 @@ public class Student : BaseEntity
     public void AssignAdvisor(Guid advisorId)
     {
         if (advisorId == Guid.Empty)
-            throw new ArgumentException("AdvisorId is required.", nameof(advisorId));
+            throw new ArgumentException(nameof(advisorId));
 
         AdvisorId = advisorId;
         UpdateTimestamp();
@@ -85,5 +94,31 @@ public class Student : BaseEntity
         UpdateTimestamp();
     }
 
-    #endregion
+    public void SetCustomMaxCreditHours(int hours)
+    {
+        if (hours <= 0)
+            throw new ArgumentException("Hours must be greater than zero.");
+
+        CustomMaxCreditHours = hours;
+        UpdateTimestamp();
+    }
+
+    public void ClearCustomMaxCreditHours()
+    {
+        CustomMaxCreditHours = null;
+        UpdateTimestamp();
+    }
+
+    public int GetMaxAllowedCreditHours(bool hasFailedCourses)
+    {
+        if (CustomMaxCreditHours.HasValue)
+            return CustomMaxCreditHours.Value;
+
+        return GPA < 2 && hasFailedCourses
+            ? 12
+            : 18;
+    }
+
+#endregion
+
 }
