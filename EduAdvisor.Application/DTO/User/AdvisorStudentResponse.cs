@@ -5,6 +5,7 @@ public sealed record AdvisorStudentResponse(
     string StudentCode,
     string FullName,
     string Email,
+    string? ImageUrl,
     decimal GPA,
     int AcademicYear
 );

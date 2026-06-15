@@ -66,6 +66,7 @@ public sealed class GetAdvisorStudentsQueryHandler(
                 x.Id,
                 x.StudentCode,
                 x.User.FullName,
+                 x.User.ProfileImageUrl??"Not Found ",
                 x.User.Email!,
                 x.GPA,
                 x.AcademicYear));
