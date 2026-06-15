@@ -41,7 +41,7 @@ public sealed class GetMyRegistrationRequestsQueryHandler(
             {
                 Id = x.Id,
                 SemesterName = x.Semester.Name,
-                Status = x.Status,
+                Status = x.Status.ToString(),
                 SubmittedAt = x.SubmittedAt,
                 Notes = x.Notes,
                 CoursesCount = x.Enrollments.Count

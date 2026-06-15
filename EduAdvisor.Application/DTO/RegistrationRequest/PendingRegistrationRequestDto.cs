@@ -27,6 +27,6 @@ namespace EduAdvisor.Application.DTO.RegistrationRequest
 
         public int CoursesCount { get; init; }
 
-        public EnrollmentStatus Status { get; init; }
+        public string Status { get; init; } = string.Empty;
     }
 }

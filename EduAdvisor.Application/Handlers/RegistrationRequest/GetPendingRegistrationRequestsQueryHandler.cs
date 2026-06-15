@@ -29,7 +29,7 @@ public sealed class GetPendingRegistrationRequestsQueryHandler(
                 StudentId = x.StudentId,
 
                 StudentName =
-                    x.Student.User.FullName ,
+                    x.Student.User.FullName,
 
                 StudentCode = x.Student.StudentCode,
 
@@ -49,7 +49,7 @@ public sealed class GetPendingRegistrationRequestsQueryHandler(
                     x.Enrollments.Count,
 
                 Status =
-                    x.Status
+                    x.Status.ToString()
             });
 
         var paginatedResult =

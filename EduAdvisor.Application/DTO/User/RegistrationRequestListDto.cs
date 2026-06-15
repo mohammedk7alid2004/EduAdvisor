@@ -13,7 +13,7 @@ namespace EduAdvisor.Application.DTO.User
 
         public string SemesterName { get; init; } = string.Empty;
 
-        public EnrollmentStatus Status { get; init; }
+        public string Status { get; init; } = string.Empty;
 
         public DateTime SubmittedAt { get; init; }
 
