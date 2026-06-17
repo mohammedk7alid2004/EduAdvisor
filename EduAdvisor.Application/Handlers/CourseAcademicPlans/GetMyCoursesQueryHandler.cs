@@ -1,7 +1,6 @@
 ﻿using EduAdvisor.Application.DTO.CourseAcademicPlans;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Queries.CourseAcademicPlans;
-using EduAdvisor.Domain.Enums.University;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
@@ -50,7 +49,6 @@ public sealed class GetMyCoursesQueryHandler(
             .Select(enrollment => new
             {
                 enrollment.SemesterCourse.CourseAcademicPlan.CourseId,
-                enrollment.Status,
                 enrollment.CourseGpa,
                 CourseCode = enrollment.SemesterCourse.CourseAcademicPlan.Course.CourseCode,
                 CourseName = enrollment.SemesterCourse.CourseAcademicPlan.Course.CourseName,
@@ -59,12 +57,12 @@ public sealed class GetMyCoursesQueryHandler(
             .ToListAsync(cancellationToken);
 
         var completedCourses = enrollments
-            .Where(enrollment => enrollment.Status == EnrollmentStatus.Approved)
+            .Where(enrollment => enrollment.CourseGpa.HasValue)
             .DistinctBy(enrollment => enrollment.CourseId)
             .ToList();
 
         var inProgressCourses = enrollments
-            .Where(enrollment => enrollment.Status == EnrollmentStatus.Pending)
+            .Where(enrollment => !enrollment.CourseGpa.HasValue)
             .DistinctBy(enrollment => enrollment.CourseId)
             .ToList();
 
@@ -111,7 +109,7 @@ public sealed class GetMyCoursesQueryHandler(
                     Code = enrollment.CourseCode,
                     Name = enrollment.CourseName,
                     CreditHours = enrollment.CreditHours,
-                    Grade = enrollment.CourseGpa,
+                    Grade = null,
                     Status = "InProgress"
                 })
                 .ToList(),
