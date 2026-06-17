@@ -1,6 +1,7 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
 using EduAdvisor.Application.DTO.AuthModules;
 using EduAdvisor.Application.Interfaces.Auth;
+using EduAdvisor.Domain.Entities.AuthModule;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,11 +9,11 @@ using Microsoft.Extensions.Localization;
 
 namespace EduAdvisor.Application.Handlers.AuthModules;
 
-public class LoginCommandHandler(
+public sealed class LoginCommandHandler(
     UserManager<User> userManager,
     ITokenService tokenService,
     IApplicationDbContext context,
-    IStringLocalizer localizer)
+    IStringLocalizer<LoginCommandHandler> localizer)
     : IRequestHandler<LoginCommand, Result<LoginResponseDto>>
 {
     public async Task<Result<LoginResponseDto>> Handle(
@@ -21,24 +22,50 @@ public class LoginCommandHandler(
     {
         #region Validate User
 
-        var user = await userManager.FindByEmailAsync(request.Email);
+        var email = request.Email.Trim();
+
+        var user = await userManager.FindByEmailAsync(email);
 
         if (user is null)
-            return Result<LoginResponseDto>.Failure(localizer["UserNotFound"], 404);
+        {
+            return Result<LoginResponseDto>.Failure(
+                localizer["UserNotFound"],
+                404);
+        }
 
         if (!user.EmailConfirmed)
-            return Result<LoginResponseDto>.Failure(localizer["AccountNotVerified"], 400);
+        {
+            return Result<LoginResponseDto>.Failure(
+                localizer["AccountNotVerified"],
+                400);
+        }
 
         if (user.IsDisabled)
-            return Result<LoginResponseDto>.Failure(localizer["AccountDisabled"], 400);
+        {
+            return Result<LoginResponseDto>.Failure(
+                localizer["AccountDisabled"],
+                400);
+        }
 
-        if (user.LockoutEnabled && user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
-            return Result<LoginResponseDto>.Failure(localizer["AccountLocked"], 400);
+        if (user.LockoutEnabled &&
+            user.LockoutEnd is not null &&
+            user.LockoutEnd > DateTimeOffset.UtcNow)
+        {
+            return Result<LoginResponseDto>.Failure(
+                localizer["AccountLocked"],
+                400);
+        }
 
-        var validPassword = await userManager.CheckPasswordAsync(user, request.Password);
+        var validPassword = await userManager.CheckPasswordAsync(
+            user,
+            request.Password);
 
         if (!validPassword)
-            return Result<LoginResponseDto>.Failure(localizer["InvalidCredentials"], 400);
+        {
+            return Result<LoginResponseDto>.Failure(
+                localizer["InvalidCredentials"],
+                400);
+        }
 
         #endregion
 
@@ -51,18 +78,24 @@ public class LoginCommandHandler(
         {
             var isPending = await context.Advisors
                 .AsNoTracking()
-                .AnyAsync(a => a.UserId == user.Id && a.IsPending, cancellationToken);
+                .AnyAsync(
+                    advisor => advisor.UserId == user.Id && advisor.IsPending,
+                    cancellationToken);
 
             if (isPending)
-                return Result<LoginResponseDto>.Forbidden(localizer["AdvisorPendingApproval"]);
+            {
+                return Result<LoginResponseDto>.Forbidden(
+                    localizer["AdvisorPendingApproval"]);
+            }
         }
 
         #endregion
 
         #region Generate Tokens
 
-        var jwt = await tokenService.GenerateJwtToken(user);
-        var refreshToken = await tokenService.GenerateRefreshToken(user);
+        var tokenResult = await tokenService.GenerateTokenAsync(
+            user,
+            cancellationToken);
 
         #endregion
 
@@ -70,10 +103,10 @@ public class LoginCommandHandler(
 
         var response = new LoginResponseDto
         {
-            AccessToken = jwt.Token,
-            AccessTokenExpiresAt = jwt.ExpiresAt,
-            RefreshToken = refreshToken.Token,
-            RefreshTokenExpiresAt = refreshToken.ExpiresOn,
+            AccessToken = tokenResult.Token,
+            AccessTokenExpiresAt = tokenResult.ExpiresAt,
+            RefreshToken = tokenResult.RefreshToken,
+            RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7),
             User = new UserDto
             {
                 Id = user.Id,
@@ -86,6 +119,8 @@ public class LoginCommandHandler(
 
         #endregion
 
-        return Result<LoginResponseDto>.Success(response, localizer["LoginSuccessful"]);
+        return Result<LoginResponseDto>.Success(
+            response,
+            localizer["LoginSuccessful"]);
     }
 }

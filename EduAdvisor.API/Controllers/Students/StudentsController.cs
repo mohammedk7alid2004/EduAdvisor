@@ -1,4 +1,5 @@
 ﻿using EduAdvisor.Application.Commands.Student;
+using EduAdvisor.Application.Queries.CourseAcademicPlans;
 using EduAdvisor.Application.Queries.CourseModules;
 using EduAdvisor.Application.Queries.RegistrationRequests;
 using MediatR;
@@ -10,7 +11,7 @@ namespace EduAdvisor.API.Controllers.Students;
 [ApiController]
 [Route("api/v1/[controller]")]
 [Authorize(Roles = "Student")]
-public class StudentsController(IMediator mediator) : ControllerBase
+public sealed class StudentsController(IMediator mediator) : ControllerBase
 {
     [HttpGet("available-courses")]
     public async Task<IActionResult> GetAvailableCourses(
@@ -32,12 +33,24 @@ public class StudentsController(IMediator mediator) : ControllerBase
 
         return StatusCode(result.StatusCode, result);
     }
+
     [HttpGet("registration-requests")]
     public async Task<IActionResult> GetMyRegistrationRequests(
-    CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
             new GetMyRegistrationRequestsQuery(),
+            cancellationToken);
+
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("my-courses")]
+    public async Task<IActionResult> GetMyCourses(
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new GetMyCoursesQuery(),
             cancellationToken);
 
         return StatusCode(result.StatusCode, result);
