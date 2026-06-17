@@ -57,18 +57,24 @@ public sealed class GetMyCoursesQueryHandler(
             .ToListAsync(cancellationToken);
 
         var completedCourses = enrollments
-            .Where(enrollment => enrollment.CourseGpa.HasValue)
-            .DistinctBy(enrollment => enrollment.CourseId)
-            .ToList();
-
-        var inProgressCourses = enrollments
-            .Where(enrollment => !enrollment.CourseGpa.HasValue)
-            .DistinctBy(enrollment => enrollment.CourseId)
+            .Where(enrollment =>
+                enrollment.CourseGpa.HasValue &&
+                enrollment.CourseGpa.Value > 2)
+            .GroupBy(enrollment => enrollment.CourseId)
+            .Select(group => group.First())
             .ToList();
 
         var completedCourseIds = completedCourses
             .Select(enrollment => enrollment.CourseId)
             .ToHashSet();
+
+        var inProgressCourses = enrollments
+            .Where(enrollment =>
+                !enrollment.CourseGpa.HasValue &&
+                !completedCourseIds.Contains(enrollment.CourseId))
+            .GroupBy(enrollment => enrollment.CourseId)
+            .Select(group => group.First())
+            .ToList();
 
         var inProgressCourseIds = inProgressCourses
             .Select(enrollment => enrollment.CourseId)
