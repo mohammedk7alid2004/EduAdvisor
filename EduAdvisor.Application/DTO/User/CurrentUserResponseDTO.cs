@@ -17,7 +17,8 @@ public record StudentProfileDto(
     string DepartmentName,
     decimal GPA,
     int CompletedHours,
-    int AcademicYear);
+    int AcademicYear,
+    string? AdvisorName);
 
 public record AdvisorProfileDto(
     string DepartmentName,

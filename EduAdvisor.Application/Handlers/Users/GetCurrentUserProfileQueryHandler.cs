@@ -11,98 +11,58 @@ using Microsoft.Extensions.Localization;
 
 namespace EduAdvisor.Application.Handlers.Users;
 
-public class GetCurrentUserProfileQueryHandler(
+public sealed class GetCurrentUserProfileQueryHandler(
     IApplicationDbContext context,
     IHttpContextAccessor httpContextAccessor,
     UserManager<User> userManager,
     IStringLocalizer localizer)
     : IRequestHandler<GetCurrentUserProfileQuery, Result<CurrentUserResponseDTO>>
 {
+    private const string StudentRole = "Student";
+    private const string AdvisorRole = "Advisor";
+
     public async Task<Result<CurrentUserResponseDTO>> Handle(
         GetCurrentUserProfileQuery request,
         CancellationToken cancellationToken)
     {
-        #region Get Current User Id
+        var userId = httpContextAccessor.HttpContext?.User
+            .FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var userId = httpContextAccessor.HttpContext?.User?
-            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userId))
-            return Result<CurrentUserResponseDTO>.Failure(localizer["Unauthorized"], 401);
-
-        #endregion
-
-        #region Fetch User
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result<CurrentUserResponseDTO>.Failure(
+                localizer["Unauthorized"],
+                StatusCodes.Status401Unauthorized);
+        }
 
         var user = await context.Users
-            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                user => user.Id == userId,
+                cancellationToken);
 
         if (user is null)
-            return Result<CurrentUserResponseDTO>.Failure(localizer["UserNotFound"], 404);
-
-        #endregion
-
-        #region Get Role
+        {
+            return Result<CurrentUserResponseDTO>.Failure(
+                localizer["UserNotFound"],
+                StatusCodes.Status404NotFound);
+        }
 
         var roles = await userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? string.Empty;
 
-        #endregion
+        var studentProfile = role == StudentRole
+            ? await GetStudentProfileAsync(userId, cancellationToken)
+            : null;
 
-        #region Build Profile Based On Role
+        var advisorProfile = role == AdvisorRole
+            ? await GetAdvisorProfileAsync(userId, cancellationToken)
+            : null;
 
-        StudentProfileDto? studentProfile = null;
-        AdvisorProfileDto? advisorProfile = null;
-
-        if (role == "Student")
-        {
-            var student = await context.Students
-                .AsNoTracking()
-                .Include(x => x.Department)
-                .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
-
-            if (student is not null)
-            {
-                studentProfile = new StudentProfileDto(
-                    student.StudentCode,
-                    student.Department.Name,
-                    student.GPA,
-                    student.CompletedHours,
-                    student.AcademicYear);
-            }
-        }
-        else if (role == "Advisor")
-        {
-            var advisor = await context.Advisors
-                .AsNoTracking()
-                .Include(x => x.Department)
-                .Include(x => x.Students)
-                .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
-
-            if (advisor is not null)
-            {
-                var pendingRequestsCount = await context.Enrollments
-                    .CountAsync(x =>
-                        x.ReviewedByAdvisorId == advisor.Id &&
-                        x.Status == EnrollmentStatus.Pending,
-                        cancellationToken);
-
-                advisorProfile = new AdvisorProfileDto(
-                    advisor.Department.Name,
-                    advisor.IsPending,
-                    advisor.Students.Count,
-                    pendingRequestsCount);
-            }
-        }
-
-        #endregion
-
-        #region Build Response
-
-        var dto = new CurrentUserResponseDTO(
+        var response = new CurrentUserResponseDTO(
             user.Id,
             user.FullName,
-            user.Email!,
+            user.Email ?? string.Empty,
             user.PhoneNumber,
             user.ProfileImageUrl,
             user.EmailConfirmed,
@@ -111,8 +71,44 @@ public class GetCurrentUserProfileQueryHandler(
             studentProfile,
             advisorProfile);
 
-        #endregion
+        return Result<CurrentUserResponseDTO>.Success(
+            response,
+            localizer["OperationCompletedSuccessfully"]);
+    }
 
-        return Result<CurrentUserResponseDTO>.Success(dto, localizer["OperationCompletedSuccessfully"]);
+    private Task<StudentProfileDto?> GetStudentProfileAsync(
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        return context.Students
+            .AsNoTracking()
+            .Where(student => student.UserId == userId)
+            .Select(student => new StudentProfileDto(
+                student.StudentCode,
+                student.Department.Name,
+                student.GPA,
+                student.CompletedHours,
+                student.AcademicYear,
+                student.Advisor != null
+                    ? student.Advisor.User.FullName
+                    : null))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    private Task<AdvisorProfileDto?> GetAdvisorProfileAsync(
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        return context.Advisors
+            .AsNoTracking()
+            .Where(advisor => advisor.UserId == userId)
+            .Select(advisor => new AdvisorProfileDto(
+                advisor.Department.Name,
+                advisor.IsPending,
+                advisor.Students.Count,
+                context.Enrollments.Count(enrollment =>
+                    enrollment.ReviewedByAdvisorId == advisor.Id &&
+                    enrollment.Status == EnrollmentStatus.Pending)))
+            .SingleOrDefaultAsync(cancellationToken);
     }
 }
