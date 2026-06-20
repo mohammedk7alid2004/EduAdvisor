@@ -16,7 +16,9 @@ public sealed class GetCurrentUserProfileQueryHandler(
     IHttpContextAccessor httpContextAccessor,
     UserManager<User> userManager,
     IStringLocalizer localizer)
-    : IRequestHandler<GetCurrentUserProfileQuery, Result<CurrentUserResponseDTO>>
+    : IRequestHandler<
+        GetCurrentUserProfileQuery,
+        Result<CurrentUserResponseDTO>>
 {
     private const string StudentRole = "Student";
     private const string AdvisorRole = "Advisor";
@@ -51,13 +53,23 @@ public sealed class GetCurrentUserProfileQueryHandler(
         var roles = await userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? string.Empty;
 
-        var studentProfile = role == StudentRole
-            ? await GetStudentProfileAsync(userId, cancellationToken)
-            : null;
+        var studentProfile = string.Equals(
+            role,
+            StudentRole,
+            StringComparison.OrdinalIgnoreCase)
+                ? await GetStudentProfileAsync(
+                    userId,
+                    cancellationToken)
+                : null;
 
-        var advisorProfile = role == AdvisorRole
-            ? await GetAdvisorProfileAsync(userId, cancellationToken)
-            : null;
+        var advisorProfile = string.Equals(
+            role,
+            AdvisorRole,
+            StringComparison.OrdinalIgnoreCase)
+                ? await GetAdvisorProfileAsync(
+                    userId,
+                    cancellationToken)
+                : null;
 
         var response = new CurrentUserResponseDTO(
             user.Id,
@@ -84,6 +96,7 @@ public sealed class GetCurrentUserProfileQueryHandler(
             .AsNoTracking()
             .Where(student => student.UserId == userId)
             .Select(student => new StudentProfileDto(
+                student.Id,
                 student.StudentCode,
                 student.Department.Name,
                 student.GPA,
@@ -103,6 +116,7 @@ public sealed class GetCurrentUserProfileQueryHandler(
             .AsNoTracking()
             .Where(advisor => advisor.UserId == userId)
             .Select(advisor => new AdvisorProfileDto(
+                advisor.Id,
                 advisor.Department.Name,
                 advisor.IsPending,
                 advisor.Students.Count,

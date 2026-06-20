@@ -38,6 +38,7 @@ public interface IApplicationDbContext
     DbSet<CourseAcademicPlan> CourseAcademicPlans {  get; set; }
     DbSet<RegistrationRequest>RegistrationRequests { get; set; }
     DbSet<SemesterCourse> SemesterCourses { get; set; }
+    DbSet<CourseRecommendation> CourseRecommendations { get; set; }
     #endregion
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);

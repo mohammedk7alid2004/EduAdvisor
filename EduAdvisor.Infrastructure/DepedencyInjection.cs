@@ -1,7 +1,9 @@
 ﻿using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Interfaces.Auth;
+using EduAdvisor.Application.Interfaces.ExternalServices;
 using EduAdvisor.Application.Interfaces.File;
 using EduAdvisor.Domain.Entities.AuthModule;
+using EduAdvisor.Infrastructure.ExternalServices.AiRecommendation;
 using EduAdvisor.Infrastructure.Localizer;
 using EduAdvisor.Infrastructure.Persistence;
 using EduAdvisor.Infrastructure.Repositories;
@@ -14,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
-
 namespace EduAdvisor.Infrastructure;
 
 public static class DepedencyInjection
@@ -25,41 +26,33 @@ public static class DepedencyInjection
     {
         services.Configure<MailSettings>(
             configuration.GetSection("MailSettings"));
-
         return services
             .AddDatabaseConfig(configuration)
             .AddPersistence()
             .AddLocalizationConfig()
-            .AddIdentityConfig();
+            .AddIdentityConfig()
+            .AddExternalServices(configuration);
     }
-
     private static IServiceCollection AddLocalizationConfig(
         this IServiceCollection services)
     {
         services.AddLocalization();
-
         services.AddScoped<IStringLocalizer, JsonStringLocalizer>();
-
         return services;
     }
-
     public static IServiceCollection AddPersistence(
         this IServiceCollection services)
     {
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
-
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IBaseUrlService, BaseUrlService>();
-        services.AddScoped<IFileStorageService,LocalFileStorageService>();
-
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHasherService, HasherService>();
         services.AddScoped<IGetCurrentUserRepository, GetCurrentUserRepository>();
-
         return services;
     }
-
     private static IServiceCollection AddDatabaseConfig(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -67,13 +60,10 @@ public static class DepedencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' not found.");
-
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
-
         return services;
     }
-
     public static IServiceCollection AddIdentityConfig(
         this IServiceCollection services)
     {
@@ -81,7 +71,20 @@ public static class DepedencyInjection
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+        return services;
+    }
+    private static IServiceCollection AddExternalServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var aiRecommendationBaseUrl = configuration["AiRecommendationService:BaseUrl"]
+            ?? "https://moattta-fci-recommender-final.hf.space";
 
+        services.AddHttpClient<IAiRecommendationService, AiRecommendationService>(client =>
+        {
+            client.BaseAddress = new Uri(aiRecommendationBaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
         return services;
     }
 }

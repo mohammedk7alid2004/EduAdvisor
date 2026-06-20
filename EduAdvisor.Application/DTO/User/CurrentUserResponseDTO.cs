@@ -5,7 +5,7 @@ public record CurrentUserResponseDTO(
     string FullName,
     string Email,
     string? Phone,
-    string? ProfileImageUrl, 
+    string? ProfileImageUrl,
     bool IsVerified,
     DateTime CreatedAt,
     string Role,
@@ -13,6 +13,7 @@ public record CurrentUserResponseDTO(
     AdvisorProfileDto? AdvisorProfile);
 
 public record StudentProfileDto(
+    Guid Id,
     string StudentCode,
     string DepartmentName,
     decimal GPA,
@@ -21,6 +22,7 @@ public record StudentProfileDto(
     string? AdvisorName);
 
 public record AdvisorProfileDto(
+    Guid Id,
     string DepartmentName,
     bool IsPending,
     int StudentsCount,

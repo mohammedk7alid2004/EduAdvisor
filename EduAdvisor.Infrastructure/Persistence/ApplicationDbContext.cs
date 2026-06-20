@@ -60,6 +60,7 @@ public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbConte
     public DbSet<SemesterCourse> SemesterCourses { get; set; }
 public DbSet<RegistrationRequest> RegistrationRequests { get; set; }
 
+    public DbSet<CourseRecommendation> CourseRecommendations { get; set; }
 
     #endregion
 
