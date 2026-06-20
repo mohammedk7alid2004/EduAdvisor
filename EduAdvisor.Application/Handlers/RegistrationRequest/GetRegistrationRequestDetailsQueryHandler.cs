@@ -19,118 +19,97 @@ public sealed class GetRegistrationRequestDetailsQueryHandler(
     {
         var registrationRequest = await context.RegistrationRequests
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(x => x.Student)
                 .ThenInclude(x => x.User)
             .Include(x => x.Student)
                 .ThenInclude(x => x.Department)
             .Include(x => x.Enrollments)
                 .ThenInclude(x => x.SemesterCourse)
-                    .ThenInclude(x => x.CourseAcademicPlan)
-                        .ThenInclude(x => x.Course)
-                            .ThenInclude(x => x.Prerequisites)
+                .ThenInclude(x => x.CourseAcademicPlan)
+                .ThenInclude(x => x.Course)
+                .ThenInclude(x => x.Prerequisites)
+                .ThenInclude(x => x.PrerequisiteCourse)
             .FirstOrDefaultAsync(
                 x => x.Id == request.RegistrationRequestId,
                 cancellationToken);
 
         if (registrationRequest is null)
         {
-            return Result<RegistrationRequestDetailsDto>
-                .NotFound("Registration request not found.");
+            return Result<RegistrationRequestDetailsDto>.NotFound(
+                "Registration request not found.");
         }
 
-        var passedCourseIds = await context.Enrollments
+        var completedCourses = await context.Enrollments
             .AsNoTracking()
             .Where(x =>
                 x.StudentId == registrationRequest.StudentId &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa >= 1)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
-            .Distinct()
-            .ToHashSetAsync(cancellationToken);
+                x.Status == EnrollmentStatus.Completed)
+            .Select(x => new
+            {
+                x.CourseGpa,
+                CourseId = x.SemesterCourse.CourseAcademicPlan.CourseId
+            })
+            .ToListAsync(cancellationToken);
 
-        var failedCourseIds = await context.Enrollments
-            .AsNoTracking()
-            .Where(x =>
-                x.StudentId == registrationRequest.StudentId &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa < 1)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
-            .Distinct()
-            .ToHashSetAsync(cancellationToken);
+        var passedCourseIds = completedCourses
+            .Where(x => x.CourseGpa >= 1)
+            .Select(x => x.CourseId)
+            .ToHashSet();
 
-        var dto = new RegistrationRequestDetailsDto
+        var failedCourseIds = completedCourses
+            .Where(x => x.CourseGpa < 1)
+            .Select(x => x.CourseId)
+            .Where(courseId => !passedCourseIds.Contains(courseId))
+            .ToHashSet();
+
+        var courses = registrationRequest.Enrollments
+            .Select(enrollment =>
+            {
+                var course = enrollment.SemesterCourse
+                    .CourseAcademicPlan
+                    .Course;
+
+                var missingPrerequisites = course.Prerequisites
+                    .Where(prerequisite =>
+                        !passedCourseIds.Contains(
+                            prerequisite.PrerequisiteCourseId))
+                    .Select(prerequisite =>
+                        prerequisite.PrerequisiteCourse.CourseName)
+                    .Distinct()
+                    .ToList();
+
+                return new RequestedCourseDto
+                {
+                    EnrollmentId = enrollment.Id,
+                    CourseId = course.Id,
+                    CourseCode = course.CourseCode,
+                    CourseName = course.CourseName,
+                    CreditHours = course.CreditHours,
+                    IsRetake = failedCourseIds.Contains(course.Id),
+                    HasMissingPrerequisites = missingPrerequisites.Count > 0,
+                    MissingPrerequisites = missingPrerequisites
+                };
+            })
+            .ToList();
+
+        var student = registrationRequest.Student;
+
+        var response = new RegistrationRequestDetailsDto
         {
             RegistrationRequestId = registrationRequest.Id,
-
-            StudentName =
-                $"{registrationRequest.Student.User.FullName} ",
-
-            StudentCode =
-                registrationRequest.Student.StudentCode,
-
-            DepartmentName =
-                registrationRequest.Student.Department.Name,
-            StudentPhotoUrl =
-                registrationRequest.Student.User.ProfileImageUrl,
-            AcademicYear =
-                registrationRequest.Student.AcademicYear,
-
-            GPA =
-                registrationRequest.Student.GPA,
-
-            CompletedHours =
-                registrationRequest.Student.CompletedHours,
-
-            FailedCoursesCount =
-                failedCourseIds.Count,
-
-            Status =
-                registrationRequest.Status,
-
-
-            Courses = registrationRequest.Enrollments
-                .Select(enrollment =>
-                {
-                    var course =
-                        enrollment.SemesterCourse
-                            .CourseAcademicPlan
-                            .Course;
-
-                    var missingPrerequisites =
-                        course.Prerequisites
-                            .Where(p =>
-                                !passedCourseIds.Contains(
-                                    p.PrerequisiteCourseId))
-                            .Select(p =>
-                                p.PrerequisiteCourse.CourseName)
-                            .ToList();
-
-                    return new RequestedCourseDto
-                    {
-                        EnrollmentId = enrollment.Id,
-
-                        CourseId = course.Id,
-
-                        CourseCode = course.CourseCode,
-
-                        CourseName = course.CourseName,
-
-                        CreditHours = course.CreditHours,
-
-                        IsRetake =
-                            failedCourseIds.Contains(course.Id),
-
-                        HasMissingPrerequisites =
-                            missingPrerequisites.Any(),
-
-                        MissingPrerequisites =
-                            missingPrerequisites
-                    };
-                })
-                .ToList()
+            StudentName = student.User.FullName.Trim(),
+            StudentCode = student.StudentCode,
+            StudentPhotoUrl = student.User.ProfileImageUrl,
+            DepartmentName = student.Department.Name,
+            AcademicYear = student.AcademicYear,
+            GPA = student.GPA,
+            CompletedHours = student.CompletedHours,
+            FailedCoursesCount = failedCourseIds.Count,
+            Status = registrationRequest.Status,
+            Courses = courses
         };
 
-        return Result<RegistrationRequestDetailsDto>
-            .Success(dto);
+        return Result<RegistrationRequestDetailsDto>.Success(response);
     }
 }
