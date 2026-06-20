@@ -241,13 +241,13 @@ This graduation project was completed under the supervision of:
 
 ## Team
 
-Add the graduation project team members and their responsibilities here.
-
-| Name | Role | GitHub |
-| :--- | :--- | :--- |
-| Team Member | Backend Developer | [Profile](#) |
-| Team Member | Flutter Developer | [Profile](#) |
-| Team Member | Frontend Developer | [Profile](#) |
+- **Mohammed Khaled**
+- **Ahmed Ragb**
+- **Mahmoud Waleed**
+- **Mohamed Gamal**
+- **Eman Ramdan**
+- **Aliaa Mohamed**
+- **Mostafa Ata**
 
 ---
 
