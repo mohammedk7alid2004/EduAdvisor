@@ -106,7 +106,7 @@ public sealed class GetRegistrationRequestDetailsQueryHandler(
             GPA = student.GPA,
             CompletedHours = student.CompletedHours,
             FailedCoursesCount = failedCourseIds.Count,
-            Status = registrationRequest.Status,
+            Status = registrationRequest.Status.ToString(),
             Courses = courses
         };
 
