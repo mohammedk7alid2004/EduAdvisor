@@ -1,4 +1,6 @@
-﻿using EduAdvisor.Application.Queries.Users;
+﻿using EduAdvisor.Application.Commands.RegistrationRequests;
+using EduAdvisor.Application.Queries.RegistrationRequests;
+using EduAdvisor.Application.Queries.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,9 +40,24 @@ public class AdvisorsController(IMediator mediator) : ControllerBase
             new ApproveAdvisorCommand(id), cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
+    [HttpPatch("reject/{id:guid}")]
+    public async Task<IActionResult> Reject(
+    Guid id,
+    [FromBody] RejectRegistrationRequestCommand command,
+    CancellationToken cancellationToken)
+    {
+        command = command with
+        {
+            RegistrationRequestId = id
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+
+        return StatusCode(result.StatusCode, result);
+    }
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending(
-    [FromQuery] GetPendingAdvisorsQuery query,
+    [FromQuery] GetPendingRegistrationRequestsQuery query,
     CancellationToken cancellationToken)
     {
         var result = await mediator.Send(query, cancellationToken);

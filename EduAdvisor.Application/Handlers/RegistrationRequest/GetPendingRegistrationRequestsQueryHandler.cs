@@ -1,65 +1,69 @@
-﻿using EduAdvisor.Application.Common.Abstractions;
-using EduAdvisor.Application.DTO.RegistrationRequest;
-using EduAdvisor.Application.Interfaces;
+﻿using EduAdvisor.Application.DTO.RegistrationRequest;
 using EduAdvisor.Application.Queries.RegistrationRequests;
-using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Enums.University;
-using Microsoft.EntityFrameworkCore;
 
-namespace EduAdvisor.Application.Handlers.RegistrationRequest;
-
-public sealed class GetPendingRegistrationRequestsQueryHandler(
-    IApplicationDbContext context)
-    : IRequestHandler<
-        GetPendingRegistrationRequestsQuery,
-        Result<PaginatedList<PendingRegistrationRequestDto>>>
+namespace EduAdvisor.Application.Handlers.RegistrationRequest
 {
-    public async Task<Result<PaginatedList<PendingRegistrationRequestDto>>> Handle(
-        GetPendingRegistrationRequestsQuery request,
-        CancellationToken cancellationToken)
+    public sealed class GetPendingRegistrationRequestsQueryHandler(
+        IApplicationDbContext context,
+        IGetCurrentUserRepository currentUser)
+        : IRequestHandler<
+            GetPendingRegistrationRequestsQuery,
+            Result<PaginatedList<PendingRegistrationRequestDto>>>
     {
-        var query = context.RegistrationRequests
-            .AsNoTracking()
-            .Where(x => x.Status == EnrollmentStatus.Pending)
-            .OrderByDescending(x => x.SubmittedAt)
-            .Select(x => new PendingRegistrationRequestDto
-            {
-                RegistrationRequestId = x.Id,
+        public async Task<Result<PaginatedList<PendingRegistrationRequestDto>>> Handle(
+            GetPendingRegistrationRequestsQuery request,
+            CancellationToken cancellationToken)
+        {
+            var userId = currentUser.GetUserId();
 
-                StudentId = x.StudentId,
+            if (string.IsNullOrWhiteSpace(userId))
+                return Result<PaginatedList<PendingRegistrationRequestDto>>
+                    .Unauthorized("User is not authenticated.");
 
-                StudentName =
-                    x.Student.User.FullName,
+            var advisor = await context.Advisors
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
-                StudentCode = x.Student.StudentCode,
+            if (advisor is null)
+                return Result<PaginatedList<PendingRegistrationRequestDto>>
+                    .NotFound("Advisor not found.");
 
-                DepartmentName =
-                    x.Student.Department.Name,
+            var query = context.RegistrationRequests
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.Status == EnrollmentStatus.Pending &&
+                    x.Student.AdvisorId == advisor.Id)
+                .OrderByDescending(x => x.SubmittedAt)
+                .Select(x => new PendingRegistrationRequestDto
+                {
+                    RegistrationRequestId = x.Id,
+                    StudentId = x.StudentId,
+                    StudentName = x.Student.User.FullName,
+                    StudentCode = x.Student.StudentCode,
+                    DepartmentName = x.Student.Department.Name,
+                    AcademicYear = x.Student.AcademicYear,
+                    StudentPhotoUrl = x.Student.User.ProfileImageUrl,
+                    SubmittedAt = x.SubmittedAt,
+                    CoursesCount = x.Enrollments.Count(),
+                    Status = x.Status.ToString()
+                });
 
-                AcademicYear =
-                    x.Student.AcademicYear,
-
-                StudentPhotoUrl =
-                    x.Student.User.ProfileImageUrl,
-
-                SubmittedAt =
-                    x.SubmittedAt,
-
-                CoursesCount =
-                    x.Enrollments.Count,
-
-                Status =
-                    x.Status.ToString()
-            });
-
-        var paginatedResult =
-            await PaginatedList<PendingRegistrationRequestDto>
+            var result = await PaginatedList<PendingRegistrationRequestDto>
                 .CreateAsync(
                     query,
                     request.PageNumber,
                     request.PageSize);
 
-        return Result<PaginatedList<PendingRegistrationRequestDto>>
-            .Success(paginatedResult);
+            if (result.TotalCount == 0)
+            {
+                return Result<PaginatedList<PendingRegistrationRequestDto>>
+                    .Success(result, "No pending registration requests found.");
+            }
+
+            return Result<PaginatedList<PendingRegistrationRequestDto>>
+                .Success(result, "Pending registration requests retrieved successfully.");
+        }
     }
 }

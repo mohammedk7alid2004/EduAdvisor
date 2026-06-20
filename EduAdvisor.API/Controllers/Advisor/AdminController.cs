@@ -1,4 +1,6 @@
-﻿using EduAdvisor.Application.Queries.Users;
+﻿using EduAdvisor.Application.Queries.Student;
+using EduAdvisor.Application.Queries.Users;
+using EduAdvisorEduAdvisor.Application.Queries.AuthModules;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -47,6 +49,22 @@ public class AdminController(IMediator mediator) : ControllerBase
 
         return StatusCode(result.StatusCode, result);
     }
+    [HttpGet("students")]
+    public async Task<IActionResult> GetStudents(
+    [FromQuery] GetAllStudentsQuery query,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(query, cancellationToken);
 
+        return StatusCode(result.StatusCode, result);
+    }
+    [HttpGet("advisors")]
+    public async Task<IActionResult> GetAllAdvisors(
+    [FromQuery] GetAllAdvisorsQuery query,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(query, cancellationToken);
 
+        return StatusCode(result.StatusCode, result);
+    }
 }
