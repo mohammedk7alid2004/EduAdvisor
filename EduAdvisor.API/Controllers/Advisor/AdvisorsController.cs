@@ -63,7 +63,7 @@ public class AdvisorsController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(query, cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
-    [HttpGet("{id:guid}")]
+    [HttpGet("RegistrationRequest/{id:guid}")]
     [Authorize(Roles = "Advisor")]
     public async Task<IActionResult> GetDetails(
     Guid id,
