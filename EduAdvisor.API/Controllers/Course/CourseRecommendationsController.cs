@@ -12,7 +12,7 @@ public sealed class CourseRecommendationsController(
 {
     [HttpPost("student")]
     public async Task<IActionResult> GetByStudent(
-        [FromBody] GetStudentRecommendationsQuery query,
+        [FromQuery] GetStudentRecommendationsQuery query,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(query, cancellationToken);

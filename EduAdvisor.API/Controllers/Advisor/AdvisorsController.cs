@@ -1,6 +1,7 @@
 ﻿using EduAdvisor.Application.Commands.RegistrationRequests;
 using EduAdvisor.Application.Queries.RegistrationRequests;
 using EduAdvisor.Application.Queries.Users;
+using EduAdvisor.Domain.Enums.University;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -75,5 +76,19 @@ public class AdvisorsController(IMediator mediator) : ControllerBase
 
         return StatusCode(result.StatusCode, result);
     }
+    [HttpGet("RegistrationRequests/Processed")]
+    [Authorize(Roles = "Advisor")]
+    public async Task<IActionResult> GetProcessedRequests(
+        [FromQuery] EnrollmentStatus? status,
+        [FromQuery] string? search,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new GetAdvisorProcessedRequestsQuery(
+                Status: status,
+                Search: search),
+            cancellationToken);
 
+        return StatusCode(result.StatusCode, result);
+    }
 }

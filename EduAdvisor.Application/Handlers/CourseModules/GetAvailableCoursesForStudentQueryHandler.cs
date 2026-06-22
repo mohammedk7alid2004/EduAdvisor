@@ -10,8 +10,12 @@ namespace EduAdvisor.Application.Handlers.CourseModules;
 public sealed class GetAvailableCoursesForStudentQueryHandler(
     IApplicationDbContext context,
     IGetCurrentUserRepository currentUser)
-    : IRequestHandler<GetAvailableCoursesForStudentQuery, Result<List<AvailableCourseDto>>>
+    : IRequestHandler<
+        GetAvailableCoursesForStudentQuery,
+        Result<List<AvailableCourseDto>>>
 {
+    private const decimal MinimumPassingGpa = 2m;
+
     public async Task<Result<List<AvailableCourseDto>>> Handle(
         GetAvailableCoursesForStudentQuery request,
         CancellationToken cancellationToken)
@@ -26,8 +30,8 @@ public sealed class GetAvailableCoursesForStudentQueryHandler(
 
         var studentId = await context.Students
             .AsNoTracking()
-            .Where(x => x.UserId == userId)
-            .Select(x => x.Id)
+            .Where(student => student.UserId == userId)
+            .Select(student => student.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (studentId == Guid.Empty)
@@ -38,69 +42,88 @@ public sealed class GetAvailableCoursesForStudentQueryHandler(
 
         var activeSemesterId = await context.Semesters
             .AsNoTracking()
-            .Where(x => x.IsActive && x.IsRegistrationOpen)
-            .Select(x => x.Id)
+            .Where(semester =>
+                semester.IsActive &&
+                semester.IsRegistrationOpen)
+            .Select(semester => semester.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (activeSemesterId == Guid.Empty)
         {
             return Result<List<AvailableCourseDto>>
-                .NotFound("No active semester found.");
+                .NotFound("No active registration semester found.");
         }
 
-        var passedCourseIds = await context.Enrollments
+        var completedCourses = await context.Enrollments
             .AsNoTracking()
-            .Where(x =>
-                x.StudentId == studentId &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa >= 1)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
-            .Distinct()
-            .ToHashSetAsync(cancellationToken);
+            .Where(enrollment =>
+                enrollment.StudentId == studentId &&
+                enrollment.Status == EnrollmentStatus.Completed)
+            .Select(enrollment => new
+            {
+                CourseId = enrollment.SemesterCourse
+                    .CourseAcademicPlan.CourseId,
 
-        var failedCourseIds = await context.Enrollments
-            .AsNoTracking()
-            .Where(x =>
-                x.StudentId == studentId &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa < 1)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
-            .Distinct()
-            .ToHashSetAsync(cancellationToken);
+                enrollment.CourseGpa
+            })
+            .ToListAsync(cancellationToken);
 
-        var alreadyRegisteredCourseIds = await context.Enrollments
+        var passedCourseIds = completedCourses
+            .Where(course => course.CourseGpa >= MinimumPassingGpa)
+            .Select(course => course.CourseId)
+            .ToHashSet();
+
+        var failedCourseIds = completedCourses
+            .Where(course =>
+                course.CourseGpa < MinimumPassingGpa &&
+                !passedCourseIds.Contains(course.CourseId))
+            .Select(course => course.CourseId)
+            .ToHashSet();
+
+        var registeredCourseIds = await context.Enrollments
             .AsNoTracking()
-            .Where(x =>
-                x.StudentId == studentId &&
-                (x.Status == EnrollmentStatus.Pending ||
-                 x.Status == EnrollmentStatus.Approved) &&
-                x.SemesterCourse.SemesterId == activeSemesterId)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
+            .Where(enrollment =>
+                enrollment.StudentId == studentId &&
+                enrollment.SemesterCourse.SemesterId == activeSemesterId &&
+                (enrollment.Status == EnrollmentStatus.Pending ||
+                 enrollment.Status == EnrollmentStatus.Approved))
+            .Select(enrollment => enrollment.SemesterCourse
+                .CourseAcademicPlan.CourseId)
             .Distinct()
             .ToHashSetAsync(cancellationToken);
 
         var candidateCourses = await context.SemesterCourses
             .AsNoTracking()
-            .Where(x => x.SemesterId == activeSemesterId)
-            .Select(x => new CourseCandidateDto
+            .Where(semesterCourse =>
+                semesterCourse.SemesterId == activeSemesterId)
+            .Select(semesterCourse => new CourseCandidateDto
             {
-                SemesterCourseId = x.Id,
-                CourseId = x.CourseAcademicPlan.CourseId,
-                CourseCode = x.CourseAcademicPlan.Course.CourseCode,
-                CourseName = x.CourseAcademicPlan.Course.CourseName,
-                CreditHours = x.CourseAcademicPlan.Course.CreditHours,
+                SemesterCourseId = semesterCourse.Id,
 
-                PrerequisiteIds = x.CourseAcademicPlan.Course.Prerequisites
-                    .Select(p => p.PrerequisiteCourseId)
+                CourseId = semesterCourse.CourseAcademicPlan.CourseId,
+
+                CourseCode = semesterCourse.CourseAcademicPlan
+                    .Course.CourseCode,
+
+                CourseName = semesterCourse.CourseAcademicPlan
+                    .Course.CourseName,
+
+                CreditHours = semesterCourse.CourseAcademicPlan
+                    .Course.CreditHours,
+
+                PrerequisiteIds = semesterCourse.CourseAcademicPlan
+                    .Course.Prerequisites
+                    .Select(prerequisite =>
+                        prerequisite.PrerequisiteCourseId)
                     .ToList()
             })
             .ToListAsync(cancellationToken);
 
         var availableCourses = candidateCourses
             .Where(course =>
-                !passedCourseIds.Contains(course.CourseId)
-                && !alreadyRegisteredCourseIds.Contains(course.CourseId)
-                && course.PrerequisiteIds.All(passedCourseIds.Contains))
+                !passedCourseIds.Contains(course.CourseId) &&
+                !registeredCourseIds.Contains(course.CourseId) &&
+                course.PrerequisiteIds.All(passedCourseIds.Contains))
             .Select(course => new AvailableCourseDto
             {
                 SemesterCourseId = course.SemesterCourseId,
@@ -110,7 +133,8 @@ public sealed class GetAvailableCoursesForStudentQueryHandler(
                 CreditHours = course.CreditHours,
                 IsRetake = failedCourseIds.Contains(course.CourseId)
             })
-            .OrderBy(x => x.CourseCode)
+            .OrderByDescending(course => course.IsRetake)
+            .ThenBy(course => course.CourseCode)
             .ToList();
 
         return Result<List<AvailableCourseDto>>
