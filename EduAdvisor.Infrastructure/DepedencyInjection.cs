@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
+
 namespace EduAdvisor.Infrastructure;
 
 public static class DepedencyInjection
@@ -26,6 +27,7 @@ public static class DepedencyInjection
     {
         services.Configure<MailSettings>(
             configuration.GetSection("MailSettings"));
+
         return services
             .AddDatabaseConfig(configuration)
             .AddPersistence()
@@ -33,58 +35,95 @@ public static class DepedencyInjection
             .AddIdentityConfig()
             .AddExternalServices(configuration);
     }
+
     private static IServiceCollection AddLocalizationConfig(
         this IServiceCollection services)
     {
         services.AddLocalization();
         services.AddScoped<IStringLocalizer, JsonStringLocalizer>();
+
         return services;
     }
-    public static IServiceCollection AddPersistence(
+
+    private static IServiceCollection AddPersistence(
         this IServiceCollection services)
     {
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
+
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+
         services.AddScoped<IBaseUrlService, BaseUrlService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHasherService, HasherService>();
-        services.AddScoped<IGetCurrentUserRepository, GetCurrentUserRepository>();
+
+        services.AddScoped<
+            IGetCurrentUserRepository,
+            GetCurrentUserRepository>();
+
         return services;
     }
+
     private static IServiceCollection AddDatabaseConfig(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
+        var connectionString =
+            configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' not found.");
+
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
+
         return services;
     }
-    public static IServiceCollection AddIdentityConfig(
+
+    private static IServiceCollection AddIdentityConfig(
         this IServiceCollection services)
     {
         services.AddIdentityCore<User>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
         return services;
     }
+
     private static IServiceCollection AddExternalServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var aiRecommendationBaseUrl = configuration["AiRecommendationService:BaseUrl"]
-            ?? "https://moattta-fci-recommender-final.hf.space";
+        var configuredBaseUrl =
+            configuration["AiRecommendationService:BaseUrl"]
+            ?? throw new InvalidOperationException(
+                "AI recommendation service BaseUrl is not configured.");
 
-        services.AddHttpClient<IAiRecommendationService, AiRecommendationService>(client =>
+        var normalizedBaseUrl = configuredBaseUrl.EndsWith('/')
+            ? configuredBaseUrl
+            : $"{configuredBaseUrl}/";
+
+        if (!Uri.TryCreate(
+                normalizedBaseUrl,
+                UriKind.Absolute,
+                out var baseUri))
         {
-            client.BaseAddress = new Uri(aiRecommendationBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+            throw new InvalidOperationException(
+                "AI recommendation service BaseUrl is invalid.");
+        }
+
+        services.AddHttpClient<
+            IAiRecommendationService,
+            AiRecommendationService>(client =>
+            {
+                client.BaseAddress = baseUri;
+                client.Timeout = TimeSpan.FromSeconds(90);
+
+                client.DefaultRequestHeaders.Accept.ParseAdd(
+                    "application/json");
+            });
+
         return services;
     }
 }

@@ -45,23 +45,7 @@ public sealed class GenerateRecommendationsCommandHandler(
                 .NotFound("Semester not found.");
         }
 
-        var aiRequest = new AiRecommendationRequestDto
-        {
-            StudentMajor = request.StudentMajor,
-            CurrentGpa = request.CurrentGpa,
-            Level = request.Level,
-            CompletedHours = request.CompletedHours,
-            RegisteredHours = request.RegisteredHours,
-            Semester = request.Semester,
-            IsGraduationSemester = request.IsGraduationSemester,
-            AvailableCourses = request.AvailableCourses
-                .Select(course => new AiAvailableCourseDto
-                {
-                    CourseCode = course.CourseCode,
-                    PrereqGrades = course.PrereqGrades
-                })
-                .ToList()
-        };
+        var aiRequest = CreateAiRequest(request);
 
         var aiResponse =
             await aiRecommendationService.GetRecommendationsAsync(
@@ -74,10 +58,22 @@ public sealed class GenerateRecommendationsCommandHandler(
                 "Unable to generate recommendations from the AI service.");
         }
 
-        var courseCodes = aiResponse.Recommendations
+        var validRecommendations = aiResponse.Recommendations
+            .Where(recommendation =>
+                !string.IsNullOrWhiteSpace(recommendation.CourseCode))
+            .DistinctBy(
+                recommendation => recommendation.CourseCode.Trim(),
+                StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (validRecommendations.Count is 0)
+        {
+            return Result<List<CourseRecommendation>>.Error(
+                "The AI service returned invalid course codes.");
+        }
+
+        var courseCodes = validRecommendations
             .Select(recommendation => recommendation.CourseCode.Trim())
-            .Where(courseCode => !string.IsNullOrWhiteSpace(courseCode))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         var courses = await context.Courses
@@ -90,38 +86,23 @@ public sealed class GenerateRecommendationsCommandHandler(
             })
             .ToListAsync(cancellationToken);
 
-        var coursesByCode = courses.ToDictionary(
-            course => course.CourseCode,
-            course => course.Id,
-            StringComparer.OrdinalIgnoreCase);
-
-        var recommendationsToAdd = aiResponse.Recommendations
-            .DistinctBy(
-                recommendation => recommendation.CourseCode,
+        var coursesByCode = courses
+            .Where(course =>
+                !string.IsNullOrWhiteSpace(course.CourseCode))
+            .GroupBy(
+                course => course.CourseCode.Trim(),
                 StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Id,
+                StringComparer.OrdinalIgnoreCase);
+
+        var recommendationsToAdd = validRecommendations
             .Select(recommendation =>
-            {
-                var courseCode = recommendation.CourseCode.Trim();
-
-                if (!coursesByCode.TryGetValue(courseCode, out var courseId))
-                    return null;
-
-                var difficulty = Enum.TryParse<CourseDifficulty>(
-                    recommendation.Difficulty,
-                    ignoreCase: true,
-                    out var parsedDifficulty)
-                        ? parsedDifficulty
-                        : CourseDifficulty.Medium;
-
-                return new CourseRecommendation(
-                    request.StudentId,
-                    courseId,
-                    request.SemesterId,
-                    difficulty,
-                    recommendation.Description,
-                    recommendation.Reasoning,
-                    recommendation.ExpectedGpaImpact);
-            })
+                CreateRecommendation(
+                    recommendation,
+                    request,
+                    coursesByCode))
             .OfType<CourseRecommendation>()
             .ToList();
 
@@ -140,5 +121,75 @@ public sealed class GenerateRecommendationsCommandHandler(
         return Result<List<CourseRecommendation>>.Success(
             recommendationsToAdd,
             "Course recommendations generated successfully.");
+    }
+
+    private static AiRecommendationRequestDto CreateAiRequest(
+        GenerateRecommendationsCommand request)
+    {
+        return new AiRecommendationRequestDto
+        {
+            StudentMajor = request.StudentMajor,
+            CurrentGpa = request.CurrentGpa,
+            Level = request.Level,
+            CompletedHours = request.CompletedHours,
+            RegisteredHours = request.RegisteredHours,
+            Semester = request.Semester,
+            IsGraduationSemester = request.IsGraduationSemester,
+
+            AvailableCourses = request.AvailableCourses
+                .Where(course =>
+                    !string.IsNullOrWhiteSpace(course.CourseCode))
+                .Select(course => new AiAvailableCourseDto
+                {
+                    CourseCode = course.CourseCode.Trim(),
+                    PrereqGrades = course.PrereqGrades
+                })
+                .ToList()
+        };
+    }
+
+    private static CourseRecommendation? CreateRecommendation(
+        AiCourseRecommendationDto recommendation,
+        GenerateRecommendationsCommand request,
+        IReadOnlyDictionary<string, Guid> coursesByCode)
+    {
+        var courseCode = recommendation.CourseCode.Trim();
+
+        if (!coursesByCode.TryGetValue(courseCode, out var courseId))
+            return null;
+
+        var difficulty = ParseDifficulty(
+            recommendation.DifficultyLabel);
+
+        var description = recommendation.Advice.Verdict;
+
+        var reasoning = recommendation.Advice.Reasons.Count > 0
+            ? string.Join(
+                Environment.NewLine,
+                recommendation.Advice.Reasons)
+            : "No reasoning was provided by the AI service.";
+
+        var expectedGpaImpact =
+            recommendation.PredictedGpa - request.CurrentGpa;
+
+        return new CourseRecommendation(
+            request.StudentId,
+            courseId,
+            request.SemesterId,
+            difficulty,
+            description,
+            reasoning,
+            expectedGpaImpact);
+    }
+
+    private static CourseDifficulty ParseDifficulty(
+        string difficultyLabel)
+    {
+        return Enum.TryParse<CourseDifficulty>(
+            difficultyLabel,
+            ignoreCase: true,
+            out var difficulty)
+                ? difficulty
+                : CourseDifficulty.Medium;
     }
 }

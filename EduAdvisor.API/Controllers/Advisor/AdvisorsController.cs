@@ -37,7 +37,7 @@ public class AdvisorsController(IMediator mediator) : ControllerBase
     CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new ApproveAdvisorCommand(id), cancellationToken);
+            new ApproveRegistrationRequestCommand(id), cancellationToken);
         return StatusCode(result.StatusCode, result);
     }
     [HttpPatch("reject/{id:guid}")]

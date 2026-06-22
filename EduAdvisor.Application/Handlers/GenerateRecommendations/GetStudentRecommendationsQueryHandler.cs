@@ -31,52 +31,81 @@ public sealed class GetStudentRecommendationsQueryHandler(
                 .NotFound("Student not found.");
         }
 
+        var semesterExists = await context.Semesters
+            .AsNoTracking()
+            .AnyAsync(
+                semester => semester.Id == request.SemesterId,
+                cancellationToken);
+
+        if (!semesterExists)
+        {
+            return Result<List<StudentRecommendationDto>>
+                .NotFound("Semester not found.");
+        }
+
         var recommendations = await GetRecommendationsAsync(
+            request.StudentId,
+            request.SemesterId,
+            cancellationToken);
+
+        if (recommendations.Count > 0)
+        {
+            return Result<List<StudentRecommendationDto>>.Success(
+                recommendations,
+                "Student recommendations retrieved successfully.");
+        }
+
+        var generateCommand = CreateGenerateCommand(request);
+
+        var generationResult = await sender.Send(
+            generateCommand,
+            cancellationToken);
+
+        if (!generationResult.IsSuccess)
+        {
+            return Result<List<StudentRecommendationDto>>.Error(
+                generationResult.Message);
+        }
+
+        recommendations = await GetRecommendationsAsync(
             request.StudentId,
             request.SemesterId,
             cancellationToken);
 
         if (recommendations.Count is 0)
         {
-            var generateCommand = new GenerateRecommendationsCommand(
-                StudentId: request.StudentId,
-                SemesterId: request.SemesterId,
-                StudentMajor: request.StudentMajor,
-                CurrentGpa: request.CurrentGpa,
-                Level: request.Level,
-                CompletedHours: request.CompletedHours,
-                RegisteredHours: request.RegisteredHours,
-                Semester: request.Semester,
-                IsGraduationSemester: request.IsGraduationSemester,
-                AvailableCourses: request.AvailableCourses);
-
-            var generationResult = await sender.Send(
-                generateCommand,
-                cancellationToken);
-
-            if (!generationResult.IsSuccess)
-            {
-                return Result<List<StudentRecommendationDto>>.Error(
-                    generationResult.Message);
-            }
-
-            recommendations = await GetRecommendationsAsync(
-                request.StudentId,
-                request.SemesterId,
-                cancellationToken);
+            return Result<List<StudentRecommendationDto>>.Error(
+                "Recommendations were generated but could not be retrieved.");
         }
 
         return Result<List<StudentRecommendationDto>>.Success(
             recommendations,
-            "Student recommendations retrieved successfully.");
+            "Student recommendations generated and retrieved successfully.");
     }
 
-    private Task<List<StudentRecommendationDto>> GetRecommendationsAsync(
-        Guid studentId,
-        Guid semesterId,
-        CancellationToken cancellationToken)
+    private static GenerateRecommendationsCommand CreateGenerateCommand(
+        GetStudentRecommendationsQuery request)
     {
-        return context.CourseRecommendations
+        return new GenerateRecommendationsCommand(
+            StudentId: request.StudentId,
+            SemesterId: request.SemesterId,
+            StudentMajor: request.StudentMajor,
+            CurrentGpa: request.CurrentGpa,
+            Level: request.Level,
+            CompletedHours: request.CompletedHours,
+            RegisteredHours: request.RegisteredHours,
+            Semester: request.Semester,
+            IsGraduationSemester: request.IsGraduationSemester,
+            AvailableCourses: request.AvailableCourses);
+    }
+
+    private async Task<List<StudentRecommendationDto>>
+        GetRecommendationsAsync(
+            Guid studentId,
+            Guid semesterId,
+            CancellationToken cancellationToken)
+    {
+        return await context.CourseRecommendations
             .AsNoTracking()
             .Where(recommendation =>
                 recommendation.StudentId == studentId &&
@@ -101,7 +130,10 @@ public sealed class GetStudentRecommendationsQueryHandler(
                         ExpectedGpaImpact =
                             recommendation.ExpectedGpaImpact
                     })
-            .OrderBy(recommendation => recommendation.CourseCode)
+            .OrderByDescending(recommendation =>
+                recommendation.ExpectedGpaImpact)
+            .ThenBy(recommendation =>
+                recommendation.CourseCode)
             .ToListAsync(cancellationToken);
     }
 }

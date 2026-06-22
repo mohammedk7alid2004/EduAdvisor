@@ -118,7 +118,17 @@ public class Student : BaseEntity
             ? 12
             : 18;
     }
+    public const int MinimumGraduationHours = 144;
 
-#endregion
+    public int RemainingHours()
+    {
+        return Math.Max(0, MinimumGraduationHours - CompletedHours);
+    }
+
+    public bool IsGraduationSemester()
+    {
+        return RemainingHours() <= 18;
+    }
+    #endregion
 
 }

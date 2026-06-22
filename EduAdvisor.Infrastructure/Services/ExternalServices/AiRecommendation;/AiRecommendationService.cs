@@ -39,28 +39,22 @@ public sealed class AiRecommendationService(
                     cancellationToken);
 
                 logger.LogError(
-                    "AI recommendation service returned status code {StatusCode}. Body: {ResponseBody}",
+                    "AI recommendation service returned status {StatusCode}. Body: {ResponseBody}",
                     (int)response.StatusCode,
                     Truncate(errorBody));
 
                 return null;
             }
 
-            var mediaType = response.Content.Headers.ContentType?.MediaType;
-
-            if (!string.Equals(
-                    mediaType,
-                    "application/json",
-                    StringComparison.OrdinalIgnoreCase) &&
-                !mediaType?.EndsWith("+json", StringComparison.OrdinalIgnoreCase) == true)
+            if (!IsJsonResponse(response))
             {
                 var responseBody = await ReadResponseBodyAsync(
                     response,
                     cancellationToken);
 
                 logger.LogError(
-                    "AI recommendation service returned an unsupported content type {ContentType}. Body: {ResponseBody}",
-                    mediaType ?? "unknown",
+                    "AI recommendation service returned unsupported content type {ContentType}. Body: {ResponseBody}",
+                    response.Content.Headers.ContentType?.MediaType ?? "unknown",
                     Truncate(responseBody));
 
                 return null;
@@ -74,7 +68,15 @@ public sealed class AiRecommendationService(
             if (result is null)
             {
                 logger.LogError(
-                    "AI recommendation service returned an empty or invalid response.");
+                    "AI recommendation service returned an empty response.");
+
+                return null;
+            }
+
+            if (result.Recommendations.Count is 0)
+            {
+                logger.LogWarning(
+                    "AI recommendation service returned no recommendations.");
             }
 
             return result;
@@ -89,14 +91,13 @@ public sealed class AiRecommendationService(
         }
         catch (OperationCanceledException)
         {
-            // Preserve cancellation requested by the API client.
             throw;
         }
         catch (HttpRequestException exception)
         {
             logger.LogError(
                 exception,
-                "HTTP request to the AI recommendation service failed.");
+                "HTTP request to AI recommendation service failed.");
 
             return null;
         }
@@ -104,10 +105,23 @@ public sealed class AiRecommendationService(
         {
             logger.LogError(
                 exception,
-                "Failed to deserialize the AI recommendation service response.");
+                "Failed to deserialize AI recommendation response.");
 
             return null;
         }
+    }
+
+    private static bool IsJsonResponse(HttpResponseMessage response)
+    {
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+
+        return mediaType is not null &&
+               (mediaType.Equals(
+                    "application/json",
+                    StringComparison.OrdinalIgnoreCase) ||
+                mediaType.EndsWith(
+                    "+json",
+                    StringComparison.OrdinalIgnoreCase));
     }
 
     private static async Task<string> ReadResponseBodyAsync(
