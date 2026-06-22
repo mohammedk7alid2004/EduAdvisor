@@ -1,20 +1,21 @@
 ﻿using EduAdvisor.Application.Commands.Student;
+using FluentValidation;
 
-namespace EduAdvisor.Application.Validators.Student
+namespace EduAdvisor.Application.Validators.Student;
+
+public sealed class SubmitRegistrationRequestCommandValidator
+    : AbstractValidator<SubmitRegistrationRequestCommand>
 {
-    public sealed class SubmitRegistrationRequestCommandValidator
-     : AbstractValidator<SubmitRegistrationRequestCommand>
+    public SubmitRegistrationRequestCommandValidator()
     {
-        public SubmitRegistrationRequestCommandValidator()
-        {
-            RuleFor(x => x.SemesterCourseIds)
-                .NotEmpty()
-                .WithMessage("At least one course must be selected.");
-
-            RuleFor(x => x.SemesterCourseIds)
-                .Must(x => x.Distinct().Count() == x.Count)
-                .WithMessage("Duplicate courses are not allowed.");
-        }
+        RuleFor(command => command.SemesterCourseIds)
+            .Cascade(CascadeMode.Stop)
+            .NotNull()
+            .WithMessage("Course selection is required.")
+            .NotEmpty()
+            .WithMessage("At least one course must be selected.")
+            .Must(courseIds =>
+                courseIds.Distinct().Count() == courseIds.Count)
+            .WithMessage("Duplicate courses are not allowed.");
     }
 }
-

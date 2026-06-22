@@ -1,7 +1,6 @@
 ﻿using EduAdvisor.Application.Commands.Student;
 using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.Interfaces;
-using EduAdvisor.Domain.Entities.AcademicModule;
 using EduAdvisor.Domain.Entities.Enrollments;
 using EduAdvisor.Domain.Enums.University;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +12,11 @@ public sealed class SubmitRegistrationRequestCommandHandler(
     IGetCurrentUserRepository currentUser)
     : IRequestHandler<SubmitRegistrationRequestCommand, Result<Guid>>
 {
+    private const decimal MinimumPassingGpa = 2m;
+    private const int MinimumCreditHours = 12;
+    private const int MaximumCreditHours = 18;
+    private const int ProbationMaximumCreditHours = 12;
+
     public async Task<Result<Guid>> Handle(
         SubmitRegistrationRequestCommand request,
         CancellationToken cancellationToken)
@@ -22,16 +26,22 @@ public sealed class SubmitRegistrationRequestCommandHandler(
         var userId = currentUser.GetUserId();
 
         if (string.IsNullOrWhiteSpace(userId))
-            return Result<Guid>.Unauthorized("User is not authenticated.");
+        {
+            return Result<Guid>
+                .Unauthorized("User is not authenticated.");
+        }
 
         var student = await context.Students
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                x => x.UserId == userId,
+                student => student.UserId == userId,
                 cancellationToken);
 
         if (student is null)
-            return Result<Guid>.NotFound("Student not found.");
+        {
+            return Result<Guid>
+                .NotFound("Student not found.");
+        }
 
         #endregion
 
@@ -40,48 +50,57 @@ public sealed class SubmitRegistrationRequestCommandHandler(
         var activeSemester = await context.Semesters
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                x => x.IsActive && x.IsRegistrationOpen,
+                semester =>
+                    semester.IsActive &&
+                    semester.IsRegistrationOpen,
                 cancellationToken);
 
         if (activeSemester is null)
+        {
             return Result<Guid>.Failure(
                 "Registration is currently closed.");
+        }
 
         #endregion
 
-        #region Selected Courses
+        #region Validate Request
 
-        var selectedCourses = await context.SemesterCourses
-            .Where(x =>
-                x.SemesterId == activeSemester.Id &&
-                request.SemesterCourseIds.Contains(x.Id))
-            .Select(x => new
-            {
-                SemesterCourseId = x.Id,
-                CourseId = x.CourseAcademicPlan.CourseId,
-                CreditHours = x.CourseAcademicPlan.Course.CreditHours
-            })
-            .ToListAsync(cancellationToken);
-
-        if (selectedCourses.Count != request.SemesterCourseIds.Count)
+        if (request.SemesterCourseIds is null ||
+            request.SemesterCourseIds.Count == 0)
         {
             return Result<Guid>.Failure(
-                "One or more selected courses are invalid.");
+                "At least one course must be selected.");
+        }
+
+        var selectedSemesterCourseIds = request.SemesterCourseIds
+            .Distinct()
+            .ToList();
+
+        if (selectedSemesterCourseIds.Count !=
+            request.SemesterCourseIds.Count)
+        {
+            return Result<Guid>.Failure(
+                "Duplicate courses are not allowed.");
         }
 
         #endregion
 
         #region Existing Registration Request
 
-        var existingRequest = await context.RegistrationRequests
-            .AnyAsync(x =>
-                x.StudentId == student.Id &&
-                x.SemesterId == activeSemester.Id &&
-                (x.Status == EnrollmentStatus.Pending ||
-                 x.Status == EnrollmentStatus.Approved),
+        var hasExistingRequest = await context.RegistrationRequests
+            .AsNoTracking()
+            .AnyAsync(
+                registrationRequest =>
+                    registrationRequest.StudentId == student.Id &&
+                    registrationRequest.SemesterId ==
+                    activeSemester.Id &&
+                    (registrationRequest.Status ==
+                     EnrollmentStatus.Pending ||
+                     registrationRequest.Status ==
+                     EnrollmentStatus.Approved),
                 cancellationToken);
 
-        if (existingRequest)
+        if (hasExistingRequest)
         {
             return Result<Guid>.Conflict(
                 "You already have a registration request for this semester.");
@@ -89,56 +108,125 @@ public sealed class SubmitRegistrationRequestCommandHandler(
 
         #endregion
 
-        #region Failed Courses
+        #region Selected Courses
 
-        var hasFailedCourses = await context.Enrollments
-            .AnyAsync(x =>
-                x.StudentId == student.Id &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa < 1,
-                cancellationToken);
+        var selectedCourses = await context.SemesterCourses
+            .AsNoTracking()
+            .Where(semesterCourse =>
+                semesterCourse.SemesterId == activeSemester.Id &&
+                selectedSemesterCourseIds.Contains(semesterCourse.Id))
+            .Select(semesterCourse => new SelectedCourseData
+            {
+                SemesterCourseId = semesterCourse.Id,
+
+                CourseId = semesterCourse
+                    .CourseAcademicPlan.CourseId,
+
+                CourseCode = semesterCourse
+                    .CourseAcademicPlan.Course.CourseCode,
+
+                CreditHours = semesterCourse
+                    .CourseAcademicPlan.Course.CreditHours,
+
+                PrerequisiteCourseIds = semesterCourse
+                    .CourseAcademicPlan
+                    .Course
+                    .Prerequisites
+                    .Select(prerequisite =>
+                        prerequisite.PrerequisiteCourseId)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        if (selectedCourses.Count !=
+            selectedSemesterCourseIds.Count)
+        {
+            return Result<Guid>.Failure(
+                "One or more selected courses are invalid or not offered in the active semester.");
+        }
 
         #endregion
 
-        #region Credit Hours Validation
+        #region Academic History
 
-        var selectedHours = selectedCourses.Sum(x => x.CreditHours);
+        var completedCourses = await context.Enrollments
+            .AsNoTracking()
+            .Where(enrollment =>
+                enrollment.StudentId == student.Id &&
+                enrollment.Status == EnrollmentStatus.Completed)
+            .Select(enrollment => new
+            {
+                CourseId = enrollment
+                    .SemesterCourse
+                    .CourseAcademicPlan
+                    .CourseId,
 
-        const int minimumHours = 12;
+                enrollment.CourseGpa
+            })
+            .ToListAsync(cancellationToken);
 
-        if (selectedHours < minimumHours)
-        {
-            return Result<Guid>.Failure(
-                $"Minimum registered credit hours is {minimumHours}.");
-        }
-
-        var maxAllowedHours =
-            student.GetMaxAllowedCreditHours(hasFailedCourses);
-
-        if (selectedHours > maxAllowedHours)
-        {
-            return Result<Guid>.Failure(
-                $"Maximum allowed credit hours is {maxAllowedHours}. Selected hours: {selectedHours}.");
-        }
+        var passedCourseIds = completedCourses
+            .Where(course =>
+                course.CourseGpa >= MinimumPassingGpa)
+            .Select(course => course.CourseId)
+            .ToHashSet();
 
         #endregion
 
         #region Passed Courses Validation
 
-        var passedCourseIds = await context.Enrollments
-            .Where(x =>
-                x.StudentId == student.Id &&
-                x.Status == EnrollmentStatus.Completed &&
-                x.CourseGpa >= 1)
-            .Select(x => x.SemesterCourse.CourseAcademicPlan.CourseId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
+        var alreadyPassedCourses = selectedCourses
+            .Where(course =>
+                passedCourseIds.Contains(course.CourseId))
+            .Select(course => course.CourseCode)
+            .ToList();
 
-        if (selectedCourses.Any(x =>
-            passedCourseIds.Contains(x.CourseId)))
+        if (alreadyPassedCourses.Count > 0)
         {
             return Result<Guid>.Failure(
-                "One or more selected courses have already been passed.");
+                $"The following courses have already been passed: {string.Join(", ", alreadyPassedCourses)}.");
+        }
+
+        #endregion
+
+        #region Prerequisites Validation
+
+        var coursesWithMissingPrerequisites = selectedCourses
+            .Where(course =>
+                course.PrerequisiteCourseIds.Any(
+                    prerequisiteId =>
+                        !passedCourseIds.Contains(prerequisiteId)))
+            .Select(course => course.CourseCode)
+            .ToList();
+
+        if (coursesWithMissingPrerequisites.Count > 0)
+        {
+            return Result<Guid>.Failure(
+                $"Prerequisites have not been completed for: {string.Join(", ", coursesWithMissingPrerequisites)}.");
+        }
+
+        #endregion
+
+        #region Credit Hours Validation
+
+        var selectedHours = selectedCourses
+            .Sum(course => course.CreditHours);
+
+        if (selectedHours < MinimumCreditHours)
+        {
+            return Result<Guid>.Failure(
+                $"Minimum registered credit hours is {MinimumCreditHours}. Selected hours: {selectedHours}.");
+        }
+
+        var maximumAllowedHours =
+            student.GPA < MinimumPassingGpa
+                ? ProbationMaximumCreditHours
+                : MaximumCreditHours;
+
+        if (selectedHours > maximumAllowedHours)
+        {
+            return Result<Guid>.Failure(
+                $"Maximum allowed credit hours is {maximumAllowedHours}. Selected hours: {selectedHours}.");
         }
 
         #endregion
@@ -147,18 +235,20 @@ public sealed class SubmitRegistrationRequestCommandHandler(
 
         var registrationRequestId = Guid.NewGuid();
 
-        var registrationRequest = new Domain.Entities.AcademicModule.RegistrationRequest(
-            registrationRequestId,
-            student.Id,
-            activeSemester.Id);
+        var registrationRequest =
+            new Domain.Entities.AcademicModule.RegistrationRequest(
+                registrationRequestId,
+                student.Id,
+                activeSemester.Id);
 
-        foreach (var course in selectedCourses)
+        foreach (var selectedCourse in selectedCourses)
         {
-            registrationRequest.AddEnrollment(
-                new Enrollment(
-                    student.Id,
-                    course.SemesterCourseId,
-                    registrationRequestId));
+            var enrollment = new Enrollment(
+                student.Id,
+                selectedCourse.SemesterCourseId,
+                registrationRequestId);
+
+            registrationRequest.AddEnrollment(enrollment);
         }
 
         context.RegistrationRequests.Add(registrationRequest);
@@ -170,5 +260,18 @@ public sealed class SubmitRegistrationRequestCommandHandler(
         return Result<Guid>.Success(
             registrationRequestId,
             "Registration request submitted successfully.");
+    }
+
+    private sealed class SelectedCourseData
+    {
+        public Guid SemesterCourseId { get; init; }
+
+        public Guid CourseId { get; init; }
+
+        public string CourseCode { get; init; } = string.Empty;
+
+        public int CreditHours { get; init; }
+
+        public List<Guid> PrerequisiteCourseIds { get; init; } = [];
     }
 }
