@@ -10,11 +10,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Download source code
+      # Checkout repository
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # Install .NET SDK
+      # Install .NET 9 SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -32,13 +32,13 @@ jobs:
       - name: Publish API
         run: dotnet publish EduAdvisor.API/EduAdvisor.API.csproj --configuration Release --output publish --no-build
 
-      # Deploy to MonsterASP FTP
+      # Deploy to MonsterASP
       - name: Deploy to MonsterASP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
+          protocol: ftps
           local-dir: ./publish/
-          server-dir: /wwwroot/
+          server-dir: ./
