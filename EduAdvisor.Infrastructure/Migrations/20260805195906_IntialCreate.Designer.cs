@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduAdvisor.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260612122219_Add_Courses")]
-    partial class Add_Courses
+    [Migration("20260805195906_IntialCreate")]
+    partial class IntialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -94,6 +94,57 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.ToTable("Courses", (string)null);
                 });
 
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CourseAcademicPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StandardSemester")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("CourseAcademicPlans", (string)null);
+                });
+
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CoursePrerequisite", b =>
                 {
                     b.Property<Guid>("CourseId")
@@ -107,6 +158,176 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.HasIndex("PrerequisiteCourseId");
 
                     b.ToTable("CoursePrerequisites", (string)null);
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CourseRecommendation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Difficulty")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ExpectedGpaImpact")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reasoning")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SemesterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("SemesterId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("CourseRecommendations");
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.RegistrationRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("ReviewedByAdvisorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SemesterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("SemesterId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("RegistrationRequests", (string)null);
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.SemesterCourse", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseAcademicPlanId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedById")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("SemesterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseAcademicPlanId");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("SemesterId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("SemesterCourses", (string)null);
                 });
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AuthModule.Advisor", b =>
@@ -161,11 +382,9 @@ namespace EduAdvisor.Infrastructure.Migrations
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AuthModule.RefreshToken", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -233,6 +452,9 @@ namespace EduAdvisor.Infrastructure.Migrations
 
                     b.Property<string>("CreatedById")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("CustomMaxCreditHours")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
@@ -432,8 +654,11 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal?>("CourseGpa")
+                        .HasColumnType("decimal(3,2)");
+
+                    b.Property<decimal?>("CoursePercentage")
+                        .HasColumnType("decimal(5,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -447,9 +672,6 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Property<string>("DeletedById")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("Grade")
-                        .HasColumnType("decimal(4,2)");
-
                     b.Property<DateTime?>("GradedAt")
                         .HasColumnType("datetime2");
 
@@ -458,6 +680,9 @@ namespace EduAdvisor.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<Guid>("RegistrationRequestId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(500)
@@ -469,7 +694,7 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Property<Guid?>("ReviewedByAdvisorId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("SemesterId")
+                    b.Property<Guid>("SemesterCourseId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
@@ -488,13 +713,13 @@ namespace EduAdvisor.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
-
                     b.HasIndex("CreatedById");
+
+                    b.HasIndex("RegistrationRequestId");
 
                     b.HasIndex("ReviewedByAdvisorId");
 
-                    b.HasIndex("SemesterId");
+                    b.HasIndex("SemesterCourseId");
 
                     b.HasIndex("StudentId");
 
@@ -571,6 +796,33 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.ToTable("Faculties", (string)null);
                 });
 
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.ApplicationRole", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex")
+                        .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.ToTable("AspNetRoles", (string)null);
+                });
+
             modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.Permission", b =>
                 {
                     b.Property<Guid>("PermissionId")
@@ -579,11 +831,15 @@ namespace EduAdvisor.Infrastructure.Migrations
 
                     b.Property<string>("PermissionName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("PermissionId");
 
-                    b.ToTable("Permissions");
+                    b.HasIndex("PermissionName")
+                        .IsUnique();
+
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.RolePermission", b =>
@@ -606,11 +862,12 @@ namespace EduAdvisor.Infrastructure.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.HasIndex("RoleId");
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("RolePermissions");
+                    b.HasIndex("RoleId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.Semesters.Semester", b =>
@@ -646,6 +903,9 @@ namespace EduAdvisor.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("StandardSemesterNumber")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -735,33 +995,6 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.HasIndex("UpdatedById");
 
                     b.ToTable("Universities", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
-
-                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -894,6 +1127,38 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CourseAcademicPlan", b =>
+                {
+                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.Departments.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("UpdatedBy");
+                });
+
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CoursePrerequisite", b =>
                 {
                     b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.Course", "Course")
@@ -911,6 +1176,113 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("PrerequisiteCourse");
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.CourseRecommendation", b =>
+                {
+                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.Semesters.Semester", "Semester")
+                        .WithMany()
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Semester");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.RegistrationRequest", b =>
+                {
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.Semesters.Semester", "Semester")
+                        .WithMany()
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Semester");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.SemesterCourse", b =>
+                {
+                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.CourseAcademicPlan", "CourseAcademicPlan")
+                        .WithMany()
+                        .HasForeignKey("CourseAcademicPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.Semesters.Semester", "Semester")
+                        .WithMany()
+                        .HasForeignKey("SemesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CourseAcademicPlan");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Semester");
+
+                    b.Navigation("UpdatedBy");
                 });
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AuthModule.Advisor", b =>
@@ -1037,25 +1409,25 @@ namespace EduAdvisor.Infrastructure.Migrations
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.Enrollments.Enrollment", b =>
                 {
-                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
                     b.HasOne("EduAdvisor.Domain.Entities.AuthModule.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.RegistrationRequest", "RegistrationRequest")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("RegistrationRequestId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
 
                     b.HasOne("EduAdvisor.Domain.Entities.AuthModule.Advisor", "ReviewedByAdvisor")
                         .WithMany()
                         .HasForeignKey("ReviewedByAdvisorId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("EduAdvisor.Domain.Entities.Semesters.Semester", "Semester")
-                        .WithMany("Enrollments")
-                        .HasForeignKey("SemesterId")
+                    b.HasOne("EduAdvisor.Domain.Entities.AcademicModule.SemesterCourse", "SemesterCourse")
+                        .WithMany()
+                        .HasForeignKey("SemesterCourseId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
@@ -1070,13 +1442,13 @@ namespace EduAdvisor.Infrastructure.Migrations
                         .HasForeignKey("UpdatedById")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.Navigation("Course");
-
                     b.Navigation("CreatedBy");
+
+                    b.Navigation("RegistrationRequest");
 
                     b.Navigation("ReviewedByAdvisor");
 
-                    b.Navigation("Semester");
+                    b.Navigation("SemesterCourse");
 
                     b.Navigation("Student");
 
@@ -1116,8 +1488,8 @@ namespace EduAdvisor.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", "Role")
-                        .WithMany()
+                    b.HasOne("EduAdvisor.Domain.Entities.RoleModule.ApplicationRole", "Role")
+                        .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1167,7 +1539,7 @@ namespace EduAdvisor.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("EduAdvisor.Domain.Entities.RoleModule.ApplicationRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1194,7 +1566,7 @@ namespace EduAdvisor.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("EduAdvisor.Domain.Entities.RoleModule.ApplicationRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1221,6 +1593,11 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Navigation("Prerequisites");
                 });
 
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.AcademicModule.RegistrationRequest", b =>
+                {
+                    b.Navigation("Enrollments");
+                });
+
             modelBuilder.Entity("EduAdvisor.Domain.Entities.AuthModule.Advisor", b =>
                 {
                     b.Navigation("Students");
@@ -1241,14 +1618,14 @@ namespace EduAdvisor.Infrastructure.Migrations
                     b.Navigation("Departments");
                 });
 
-            modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.Permission", b =>
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.ApplicationRole", b =>
                 {
                     b.Navigation("RolePermissions");
                 });
 
-            modelBuilder.Entity("EduAdvisor.Domain.Entities.Semesters.Semester", b =>
+            modelBuilder.Entity("EduAdvisor.Domain.Entities.RoleModule.Permission", b =>
                 {
-                    b.Navigation("Enrollments");
+                    b.Navigation("RolePermissions");
                 });
 
             modelBuilder.Entity("EduAdvisor.Domain.Entities.Universities.University", b =>
