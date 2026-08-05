@@ -1,59 +1,82 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Domain.Entities.AuthModule;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace EduAdvisor.Application.Handlers.AuthModules
+namespace EduAdvisor.Application.Handlers.AuthModules;
+
+public sealed class ResetPasswordCommandHandler(
+    UserManager<User> userManager,
+    IOtpService otpService,
+    IApplicationDbContext context,
+    IStringLocalizer localizer)
+    : IRequestHandler<ResetPasswordCommand, Result<bool>>
 {
-    public class ResetPasswordCommandHandler(
-        UserManager<User> userManager,
-        IMemoryCache memoryCache,
-       IApplicationDbContext context,
-        IStringLocalizer localizer,
-        IHasherService hasher
-    ) : IRequestHandler<ResetPasswordCommand, Result<bool>>
+    public async Task<Result<bool>> Handle(
+        ResetPasswordCommand request,
+        CancellationToken cancellationToken)
     {
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly IMemoryCache _memoryCache = memoryCache;
-        private readonly IApplicationDbContext _context = context;
-        private readonly IStringLocalizer _localizer = localizer;
-        private readonly IHasherService _hasher = hasher;
-
-        public async Task<Result<bool>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+        if (request.NewPassword != request.ConfirmPassword)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
-
-            if (user == null)
-                return Result<bool>.Failure(_localizer["UserNotfound"], 404);
-
-            var cacheKey = $"ResetToken_{request.Email}";
-            var cachedToken = _memoryCache.Get<string>(cacheKey);
-
-            if (cachedToken == null)
-                return Result<bool>.Failure(_localizer["Expiredtoken"], 400);
-
-            if (!_hasher.Verify(cachedToken, request.Token))
-                return Result<bool>.Failure(_localizer["Invalidtoken"], 400);
-
-
-            var identityToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-            var result = await _userManager.ResetPasswordAsync(user, identityToken, request.NewPassword);
-
-            if (!result.Succeeded)
-                return Result<bool>.Failure(_localizer["Weakpassword"], 400);
-            _memoryCache.Remove(cacheKey); 
-
-            var tokens = _context.RefreshTokens.Where(x => x.UserId == user.Id);
-            _context.RefreshTokens.RemoveRange(tokens);
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<bool>.Success(true, _localizer["Passwordresetsuccessfully"]);
+            return Result<bool>.Failure(
+                localizer["PasswordMismatch"],
+                400);
         }
+
+        var user = await userManager.FindByEmailAsync(request.Email);
+
+        if (user is null)
+        {
+            return Result<bool>.Failure(
+                localizer["UserNotFound"],
+                404);
+        }
+
+        var isValidOtp = await otpService.ValidateAsync(
+            request.Email,
+            request.Otp,
+            OtpType.PasswordReset,
+            cancellationToken);
+
+        if (!isValidOtp)
+        {
+            return Result<bool>.Failure(
+                localizer["InvalidOtp"],
+                400);
+        }
+
+        var identityResetToken =
+            await userManager.GeneratePasswordResetTokenAsync(user);
+
+        var result = await userManager.ResetPasswordAsync(
+            user,
+            identityResetToken,
+            request.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            var error = result.Errors.First().Description;
+
+            return Result<bool>.Failure(
+                error,
+                400);
+        }
+
+        var refreshTokens = await context.RefreshTokens
+            .Where(x => x.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        context.RefreshTokens.RemoveRange(refreshTokens);
+
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(
+            true,
+            localizer["PasswordResetSuccessfully"]);
     }
 }

@@ -11,6 +11,8 @@ using EduAdvisor.Infrastructure.Services.AuthModules;
 using EduAdvisor.Infrastructure.Services.Email;
 using EduAdvisor.Infrastructure.Services.File;
 using EduAdvisor.Infrastructure.Services.Hasher;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +35,7 @@ public static class DepedencyInjection
             .AddPersistence()
             .AddLocalizationConfig()
             .AddIdentityConfig()
+            .AddHangfireConfig(configuration)
             .AddExternalServices(configuration);
     }
 
@@ -57,7 +60,7 @@ public static class DepedencyInjection
         services.AddScoped<IBaseUrlService, BaseUrlService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IHasherService, HasherService>();
-
+        services.AddScoped<IOtpService, OtpService>();
         services.AddScoped<
             IGetCurrentUserRepository,
             GetCurrentUserRepository>();
@@ -125,5 +128,64 @@ public static class DepedencyInjection
             });
 
         return services;
+    }
+    private static IServiceCollection AddHangfireConfig(
+       this IServiceCollection services,
+       IConfiguration configuration)
+    {
+        var connectionString =
+            configuration.GetConnectionString(
+                "DefaultConnection")
+            ?? throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' not found.");
+
+        services.AddHangfire(
+            configurationBuilder =>
+            {
+                configurationBuilder
+                    .SetDataCompatibilityLevel(
+                        CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UseSqlServerStorage(
+                        connectionString,
+                        new SqlServerStorageOptions
+                        {
+                            CommandBatchMaxTimeout =
+                                TimeSpan.FromMinutes(5),
+
+                            SlidingInvisibilityTimeout =
+                                TimeSpan.FromMinutes(5),
+
+                            QueuePollInterval =
+                                TimeSpan.FromSeconds(15),
+
+                            UseRecommendedIsolationLevel =
+                                true,
+
+                            DisableGlobalLocks =
+                                true
+                        });
+            });
+
+        services.AddHangfireServer(
+            options =>
+            {
+                options.ServerName =
+                    configuration[
+                        "Hangfire:ServerName"]
+                    ?? "BaridikExpress.BackupServer";
+
+                options.Queues =
+                [
+                    "emails",
+                    "default",
+                    "backups"
+                ];
+            });
+
+
+        return services;
+
     }
 }

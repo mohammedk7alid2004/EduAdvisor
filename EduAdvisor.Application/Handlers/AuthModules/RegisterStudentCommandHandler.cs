@@ -1,23 +1,24 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.DTO.User;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Application.Interfaces.File;
 using EduAdvisor.Domain.Entities.AuthModule;
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace EduAdvisor.Application.Handlers.AuthModules;
 
-public class RegisterStudentCommandHandler(
+public sealed class RegisterStudentCommandHandler(
     UserManager<User> userManager,
     IApplicationDbContext context,
     IStringLocalizer localizer,
-    IMemoryCache memoryCache,
-    IEmailService emailService,
-    IHasherService hasher,
+    IOtpService otpService,
+    IBackgroundJobClient backgroundJobClient,
     IFileStorageService fileStorage)
     : IRequestHandler<RegisterStudentCommand, Result<UserResponseDto>>
 {
@@ -25,10 +26,12 @@ public class RegisterStudentCommandHandler(
         RegisterStudentCommand request,
         CancellationToken cancellationToken)
     {
-        #region Validate Email Uniqueness
+        #region Validate Email
 
         if (await userManager.FindByEmailAsync(request.Email) is not null)
-            return Result<UserResponseDto>.Failure(localizer["UserAlreadyExists"], 400);
+            return Result<UserResponseDto>.Failure(
+                localizer["UserAlreadyExists"],
+                400);
 
         #endregion
 
@@ -38,90 +41,146 @@ public class RegisterStudentCommandHandler(
             .AnyAsync(x => x.Id == request.DepartmentId, cancellationToken);
 
         if (!departmentExists)
-            return Result<UserResponseDto>.Failure(localizer["DepartmentNotFound"], 404);
+            return Result<UserResponseDto>.Failure(
+                localizer["DepartmentNotFound"],
+                404);
 
         #endregion
 
-        #region Validate Student Code Uniqueness
+        #region Validate Student Code
 
         var studentCodeExists = await context.Students
             .AnyAsync(x => x.StudentCode == request.StudentCode, cancellationToken);
 
         if (studentCodeExists)
-            return Result<UserResponseDto>.Failure(localizer["StudentCodeAlreadyExists"], 400);
+            return Result<UserResponseDto>.Failure(
+                localizer["StudentCodeAlreadyExists"],
+                400);
 
         #endregion
 
-        #region Upload Profile Image
+        #region Upload Image
 
         string? profileImageUrl = null;
 
         if (request.ProfileImage is not null)
         {
-            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.ProfileImage.FileName)}";
+            var uniqueFileName =
+                $"{Guid.NewGuid()}{Path.GetExtension(request.ProfileImage.FileName)}";
+
             profileImageUrl = await fileStorage.SaveFileAsync(
                 request.ProfileImage.OpenReadStream(),
                 uniqueFileName,
                 "profile-images");
 
             if (profileImageUrl is null)
-                return Result<UserResponseDto>.Failure(localizer["ImageUploadFailed"], 400);
+                return Result<UserResponseDto>.Failure(
+                    localizer["ImageUploadFailed"],
+                    400);
         }
 
         #endregion
 
         #region Create User
 
-        var fullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}";
+        var fullName =
+            $"{request.FirstName.Trim()} {request.LastName.Trim()}";
 
-        var user = new User(fullName, request.Email, request.NationalId)
+        var user = new User(
+            fullName,
+            request.Email,
+            request.NationalId)
         {
-            EmailConfirmed = false,
+            EmailConfirmed = false
         };
 
         user.SetProfileImage(profileImageUrl);
 
-        var createResult = await userManager.CreateAsync(user, request.Password);
+        var createResult = await userManager.CreateAsync(
+            user,
+            request.Password);
 
         if (!createResult.Succeeded)
         {
-            await fileStorage.DeleteFileAsync(profileImageUrl);
-            var error = createResult.Errors.Select(e => e.Description).First();
-            return Result<UserResponseDto>.Failure(localizer["UserRegistrationFailed"] + ": " + error, 400);
+            if (profileImageUrl is not null)
+                await fileStorage.DeleteFileAsync(profileImageUrl);
+
+            return Result<UserResponseDto>.Failure(
+                $"{localizer["UserRegistrationFailed"]}: {createResult.Errors.First().Description}",
+                400);
         }
 
         #endregion
 
         #region Assign Role
 
-        var roleResult = await userManager.AddToRoleAsync(user, "Student");
+        var roleResult = await userManager.AddToRoleAsync(
+            user,
+            "Student");
 
         if (!roleResult.Succeeded)
         {
-            await fileStorage.DeleteFileAsync(profileImageUrl);
-            var error = roleResult.Errors.Select(e => e.Description).First();
-            return Result<UserResponseDto>.Failure(localizer["UserRegistrationFailed"] + ": " + error, 400);
+            await userManager.DeleteAsync(user);
+
+            if (profileImageUrl is not null)
+                await fileStorage.DeleteFileAsync(profileImageUrl);
+
+            return Result<UserResponseDto>.Failure(
+                $"{localizer["UserRegistrationFailed"]}: {roleResult.Errors.First().Description}",
+                400);
         }
 
         #endregion
 
-        #region Create Student Profile
+        #region Create Student
 
-        var student = new Domain.Entities.AuthModule.Student(user.Id, request.StudentCode, request.DepartmentId);
-        await context.Students.AddAsync(student, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            var student = new Domain.Entities.AuthModule.Student(
+                user.Id,
+                request.StudentCode,
+                request.DepartmentId);
+
+            await context.Students.AddAsync(
+                student,
+                cancellationToken);
+
+            await context.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch
+        {
+            await userManager.DeleteAsync(user);
+
+            if (profileImageUrl is not null)
+                await fileStorage.DeleteFileAsync(profileImageUrl);
+
+            throw;
+        }
 
         #endregion
 
         #region Send OTP
 
-        var otp = new Random().Next(100000, 999999).ToString();
-        memoryCache.Set($"EmailOTP_{request.Email}", hasher.Hash(otp), TimeSpan.FromMinutes(5));
-        await emailService.SendConfirmationEmail(user, otp);
+        var otp = await otpService.GenerateAndStoreAsync(
+            request.Email,
+            OtpType.EmailConfirmation,
+            cancellationToken);
+
+        backgroundJobClient.Enqueue<IEmailService>(
+            service => service.SendConfirmationEmail(user, otp));
 
         #endregion
 
-        var userResponse = new UserResponseDto(user.Id, user.FullName, user.Email!, user.EmailConfirmed);
-        return Result<UserResponseDto>.Success(userResponse, localizer["UserRegisteredSuccessfully"], 201);
+        var response = new UserResponseDto(
+            user.Id,
+            user.FullName,
+            user.Email!,
+            user.EmailConfirmed);
+
+        return Result<UserResponseDto>.Success(
+            response,
+            localizer["UserRegisteredSuccessfully"],
+            201);
     }
 }

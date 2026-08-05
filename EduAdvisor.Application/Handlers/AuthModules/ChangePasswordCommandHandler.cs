@@ -3,40 +3,48 @@ using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Domain.Entities.AuthModule;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace EduAdvisor.Application.Handlers.AuthModules
+namespace EduAdvisor.Application.Handlers.AuthModules;
+
+public sealed class ChangePasswordCommandHandler(
+    UserManager<User> userManager,
+    IGetCurrentUserRepository currentUser,
+    IApplicationDbContext context,
+    IStringLocalizer localizer)
+    : IRequestHandler<ChangePasswordCommand, Result<bool>>
 {
-    public class ChangePasswordCommandHandler(
-        UserManager<User> userManager,
-        IGetCurrentUserRepository currentUser,
-        IApplicationDbContext context,
-        IStringLocalizer localizer
-    ) : IRequestHandler<ChangePasswordCommand, Result<bool>>
+    public async Task<Result<bool>> Handle(
+        ChangePasswordCommand request,
+        CancellationToken cancellationToken)
     {
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly IGetCurrentUserRepository _currentUser = currentUser;
-        private readonly IApplicationDbContext _context = context;
-        private readonly IStringLocalizer _localizer = localizer;
+        var user = await userManager.FindByIdAsync(currentUser.GetUserId());
 
-        public async Task<Result<bool>> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByIdAsync(_currentUser.GetUserId());
+        if (user is null)
+            return Result<bool>.Failure(
+                localizer["UserNotFound"],
+                404);
 
-            if (user == null)
-                return Result<bool>.Failure(_localizer["UserNotfound"], 404);
+        var result = await userManager.ChangePasswordAsync(
+            user,
+            request.CurrentPassword,
+            request.NewPassword);
 
-            var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+            return Result<bool>.Failure(
+                localizer["IncorrectCurrentPassword"],
+                400);
 
-            if (!result.Succeeded)
-                return Result<bool>.Failure(_localizer["Incorrectcurrentpassword"], 400);
+        var refreshTokens = context.RefreshTokens
+            .Where(x => x.UserId == user.Id);
 
-            var tokens = _context.RefreshTokens.Where(x => x.UserId == user.Id);
-            _context.RefreshTokens.RemoveRange(tokens);
+        context.RefreshTokens.RemoveRange(refreshTokens);
 
-            await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
-            return Result<bool>.Success(true, _localizer["Passwordchangedsuccessfully"]);
-        }
+        return Result<bool>.Success(
+            true,
+            localizer["PasswordChangedSuccessfully"]);
     }
 }

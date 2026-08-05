@@ -1,51 +1,53 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Domain.Entities.AuthModule;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Localization;
 
-namespace EduAdvisor.Application.Handlers.AuthModules
+namespace EduAdvisor.Application.Handlers.AuthModules;
+
+public sealed class VerifyResetOtpCommandHandler(
+    UserManager<User> userManager,
+    IOtpService otpService,
+    IMemoryCache memoryCache,
+    IHasherService hasherService,
+    IStringLocalizer localizer)
+    : IRequestHandler<VerifyResetOtpCommand, Result<string>>
 {
-    public class VerifyResetOtpCommandHandler(
-        ITokenService tokenService,
-        UserManager<User> userManager,
-        IMemoryCache memoryCache,
-        IHasherService hasher,
-        IStringLocalizer localizer
-    ) : IRequestHandler<VerifyResetOtpCommand, Result<string>>
+    public async Task<Result<string>> Handle(
+        VerifyResetOtpCommand request,
+        CancellationToken cancellationToken)
     {
-        private readonly ITokenService _tokenService = tokenService;
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly IMemoryCache _memoryCache = memoryCache;
-        private readonly IHasherService _hasher = hasher;
-        private readonly IStringLocalizer _localizer = localizer;
+        var user = await userManager.FindByEmailAsync(request.Email);
 
-        public async Task<Result<string>> Handle(VerifyResetOtpCommand request, CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null)
+            return Result<string>.Failure(
+                localizer["UserNotFound"],
+                404);
 
-            if (user == null)
-                return Result<string>.Failure(_localizer["UserNotfound"], 404);
+        var isValid = await otpService.ValidateAsync(
+            request.Email,
+            request.Otp,
+            OtpType.PasswordReset,
+            cancellationToken);
 
-            var cacheKey = $"ResetOTP_{request.Email}";
-            var cachedOtp = _memoryCache.Get<string>(cacheKey);
+        if (!isValid)
+            return Result<string>.Failure(
+                localizer["InvalidToken"],
+                400);
 
-            if (cachedOtp == null)
-                return Result<string>.Failure(_localizer["Expiredtoken"], 400);
+        var resetToken = Guid.NewGuid().ToString("N");
 
-            if (!_hasher.Verify(cachedOtp, request.Otp))
-                return Result<string>.Failure(_localizer["Invalidtoken"], 400);
+        memoryCache.Set(
+            $"ResetToken_{request.Email.ToLowerInvariant()}",
+            hasherService.Hash(resetToken),
+            TimeSpan.FromMinutes(10));
 
-            _memoryCache.Remove(cacheKey);
-
-            var resetToken = Guid.NewGuid().ToString();
-            var hashed = _hasher.Hash(resetToken);
-            _memoryCache.Set($"ResetToken_{request.Email}", hashed, TimeSpan.FromMinutes(10));
-
-            return Result<string>.Success(resetToken, _localizer["Otpverifiedsuccessfully"]);
-        }
+        return Result<string>.Success(
+            resetToken,
+            localizer["OtpVerifiedSuccessfully"]);
     }
 }

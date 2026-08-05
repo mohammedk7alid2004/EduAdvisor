@@ -1,44 +1,43 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Domain.Entities.AuthModule;
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Localization;
 
-namespace EduAdvisor.Application.Handlers.AuthModules
+namespace EduAdvisor.Application.Handlers.AuthModules;
+
+public sealed class ForgotPasswordCommandHandler(
+    UserManager<User> userManager,
+    IOtpService otpService,
+    IStringLocalizer localizer,
+    IBackgroundJobClient backgroundJobClient)
+    : IRequestHandler<ForgotPasswordCommand, Result<bool>>
 {
-    public class ForgotPasswordCommandHandler(
-        UserManager<User> userManager,
-        IMemoryCache memoryCache,
-        IEmailService emailService,
-        IHasherService hasher,
-        IStringLocalizer localizer
-    ) : IRequestHandler<ForgotPasswordCommand, Result<bool>>
+    public async Task<Result<bool>> Handle(
+        ForgotPasswordCommand request,
+        CancellationToken cancellationToken)
     {
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly IMemoryCache _memoryCache = memoryCache;
-        private readonly IEmailService _emailService = emailService;
-        private readonly IHasherService _hasher = hasher;
-        private readonly IStringLocalizer _localizer = localizer;
+        var user = await userManager.FindByEmailAsync(request.Email);
 
-        public async Task<Result<bool>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is null)
+            return Result<bool>.Failure(
+                localizer["UserNotFound"],
+                404);
 
-            if (user == null)
-                return Result<bool>.Failure(_localizer["UserNotfound"], 404);
+        var otp = await otpService.GenerateAndStoreAsync(
+            request.Email,
+            OtpType.PasswordReset,
+            cancellationToken);
 
-            var otp = new Random().Next(100000, 999999).ToString();
-            var hashedOtp = _hasher.Hash(otp);
+        backgroundJobClient.Enqueue<IEmailService>(
+            service => service.SendResetPasswordEmail(user, otp));
 
-            var cacheKey = $"ResetOTP_{request.Email}";
-            _memoryCache.Set(cacheKey, hashedOtp, TimeSpan.FromMinutes(15));
-
-            await _emailService.SendResetPasswordEmail(user, otp);
-
-            return Result<bool>.Success(true, _localizer["Passwordresetinstructionssent"]);
-        }
+        return Result<bool>.Success(
+            true,
+            localizer["PasswordResetInstructionsSent"]);
     }
 }

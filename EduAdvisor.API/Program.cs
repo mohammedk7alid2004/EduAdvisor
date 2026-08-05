@@ -8,6 +8,7 @@ using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Infrastructure;
 using EduAdvisor.Infrastructure.Data.Seeder.IdentitySeed;
 using EduAdvisor.Infrastructure.Persistence;
+using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
@@ -100,7 +101,7 @@ app.UseRouting();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
-
+//app.UseHangfireDashboard();
 app.MapControllers();
 
 app.Run();

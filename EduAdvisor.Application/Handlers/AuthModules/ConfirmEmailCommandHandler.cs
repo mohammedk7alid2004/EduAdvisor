@@ -1,47 +1,58 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Application.Common.Abstractions;
 using EduAdvisor.Application.Interfaces;
 using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Domain.Entities.AuthModule;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Localization;
 
-namespace EduAdvisor.Application.Handlers.AuthModules
+namespace EduAdvisor.Application.Handlers.AuthModules;
+
+public sealed class ConfirmEmailCommandHandler(
+    UserManager<User> userManager,
+    IStringLocalizer localizer,
+    IOtpService otpService)
+    : IRequestHandler<ConfirmEmailCommand, Result<bool>>
 {
-    public class ConfirmEmailCommandHandler(UserManager<User> userManager
-        , IStringLocalizer localizer
-          , IMemoryCache memoryCache
-        ,IHasherService hasherService
-        ) : IRequestHandler<ConfirmEmailCommand, Result<bool>>
+    public async Task<Result<bool>> Handle(
+        ConfirmEmailCommand request,
+        CancellationToken cancellationToken)
     {
-        private readonly UserManager<User> _userManager = userManager;
-        private readonly IStringLocalizer _localizer = localizer;
-        private readonly IMemoryCache _memoryCache = memoryCache;
-        private readonly IHasherService _hasherService = hasherService;
+        var user = await userManager.FindByEmailAsync(request.Email);
 
-        public async Task<Result<bool>> Handle(ConfirmEmailCommand request, CancellationToken cancellationToken)
-        {
-            var user = await _userManager.FindByEmailAsync(request.Email);
-            if (user == null)
-                return Result<bool>.Failure(_localizer["UserNotfound"], 404);
-            if (user.EmailConfirmed)
-                return Result<bool>.Failure(_localizer["EmailAlreadyConfirmed"], 400);
+        if (user is null)
+            return Result<bool>.Failure(
+                localizer["UserNotFound"],
+                404);
 
-            var cacheKey = $"EmailOTP_{request.Email}";
-            var cachedOtp = _memoryCache.Get<string>(cacheKey);
-            if (cachedOtp == null)
-                return Result<bool>.Failure(_localizer["OtpExpired"], 400);
+        if (user.EmailConfirmed)
+            return Result<bool>.Failure(
+                localizer["EmailAlreadyConfirmed"],
+                400);
 
-            if (!_hasherService.Verify(cachedOtp, request.OTP))
-                return Result<bool>.Failure(_localizer["InvalidOTP"], 400);
-            _memoryCache.Remove(cacheKey);
+        var isOtpValid = await otpService.ValidateAsync(
+            request.Email,
+            request.OTP,
+            OtpType.EmailConfirmation,
+            cancellationToken);
 
-            user.EmailConfirmed = true;
-                var result = await _userManager.UpdateAsync(user);
+        if (!isOtpValid)
+            return Result<bool>.Failure(
+                localizer["InvalidOTP"],
+                400);
 
-            return result.Succeeded ? Result<bool>.Success(true, _localizer["Emailconfirmed"]) 
-                : Result<bool>.Failure(_localizer["Emailconfirmationfailed"], 500);
-        }
+        user.EmailConfirmed = true;
+
+        var result = await userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+            return Result<bool>.Failure(
+                localizer["EmailConfirmationFailed"],
+                500);
+
+        return Result<bool>.Success(
+            true,
+            localizer["EmailConfirmed"]);
     }
 }

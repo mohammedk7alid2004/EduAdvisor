@@ -51,12 +51,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpPost("verify-reset-otp")]
-    public async Task<IActionResult> VerifyResetOtp([FromBody] VerifyResetOtpCommand command)
-    {
-        var result = await mediator.Send(command);
-        return StatusCode(result.StatusCode, result);
-    }
+
 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
