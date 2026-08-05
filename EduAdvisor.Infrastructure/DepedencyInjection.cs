@@ -23,6 +23,8 @@ namespace EduAdvisor.Infrastructure;
 
 public static class DepedencyInjection
 {
+    #region Public Registration
+
     public static IServiceCollection AddInfrastructureDependencies(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -39,34 +41,9 @@ public static class DepedencyInjection
             .AddExternalServices(configuration);
     }
 
-    private static IServiceCollection AddLocalizationConfig(
-        this IServiceCollection services)
-    {
-        services.AddLocalization();
-        services.AddScoped<IStringLocalizer, JsonStringLocalizer>();
+    #endregion
 
-        return services;
-    }
-
-    private static IServiceCollection AddPersistence(
-        this IServiceCollection services)
-    {
-        services.AddScoped<ITokenService, TokenService>();
-        services.AddScoped<IEmailService, EmailService>();
-
-        services.AddScoped<IApplicationDbContext>(provider =>
-            provider.GetRequiredService<ApplicationDbContext>());
-
-        services.AddScoped<IBaseUrlService, BaseUrlService>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
-        services.AddScoped<IHasherService, HasherService>();
-        services.AddScoped<IOtpService, OtpService>();
-        services.AddScoped<
-            IGetCurrentUserRepository,
-            GetCurrentUserRepository>();
-
-        return services;
-    }
+    #region Database
 
     private static IServiceCollection AddDatabaseConfig(
         this IServiceCollection services,
@@ -83,6 +60,48 @@ public static class DepedencyInjection
         return services;
     }
 
+    #endregion
+
+    #region Persistence
+
+    private static IServiceCollection AddPersistence(
+        this IServiceCollection services)
+    {
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IEmailService, EmailService>();
+
+        services.AddScoped<IApplicationDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IBaseUrlService, BaseUrlService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IHasherService, HasherService>();
+        services.AddScoped<IOtpService, OtpService>();
+
+        services.AddScoped<
+            IGetCurrentUserRepository,
+            GetCurrentUserRepository>();
+
+        return services;
+    }
+
+    #endregion
+
+    #region Localization
+
+    private static IServiceCollection AddLocalizationConfig(
+        this IServiceCollection services)
+    {
+        services.AddLocalization();
+        services.AddScoped<IStringLocalizer, JsonStringLocalizer>();
+
+        return services;
+    }
+
+    #endregion
+
+    #region Identity
+
     private static IServiceCollection AddIdentityConfig(
         this IServiceCollection services)
     {
@@ -93,6 +112,10 @@ public static class DepedencyInjection
 
         return services;
     }
+
+    #endregion
+
+    #region External Services
 
     private static IServiceCollection AddExternalServices(
         this IServiceCollection services,
@@ -129,63 +152,64 @@ public static class DepedencyInjection
 
         return services;
     }
+
+    #endregion
+
+    #region Hangfire
+
     private static IServiceCollection AddHangfireConfig(
-       this IServiceCollection services,
-       IConfiguration configuration)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var connectionString =
-            configuration.GetConnectionString(
-                "DefaultConnection")
+            configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' not found.");
 
-        services.AddHangfire(
-            configurationBuilder =>
-            {
-                configurationBuilder
-                    .SetDataCompatibilityLevel(
-                        CompatibilityLevel.Version_180)
-                    .UseSimpleAssemblyNameTypeSerializer()
-                    .UseRecommendedSerializerSettings()
-                    .UseSqlServerStorage(
-                        connectionString,
-                        new SqlServerStorageOptions
-                        {
-                            CommandBatchMaxTimeout =
-                                TimeSpan.FromMinutes(5),
+        services.AddHangfire(configurationBuilder =>
+        {
+            configurationBuilder
+                .SetDataCompatibilityLevel(
+                    CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(
+                    connectionString,
+                    new SqlServerStorageOptions
+                    {
+                        CommandBatchMaxTimeout =
+                            TimeSpan.FromMinutes(5),
 
-                            SlidingInvisibilityTimeout =
-                                TimeSpan.FromMinutes(5),
+                        SlidingInvisibilityTimeout =
+                            TimeSpan.FromMinutes(5),
 
-                            QueuePollInterval =
-                                TimeSpan.FromSeconds(15),
+                        QueuePollInterval =
+                            TimeSpan.FromSeconds(15),
 
-                            UseRecommendedIsolationLevel =
-                                true,
+                        UseRecommendedIsolationLevel =
+                            true,
 
-                            DisableGlobalLocks =
-                                true
-                        });
-            });
+                        DisableGlobalLocks =
+                            true
+                    });
+        });
 
-        services.AddHangfireServer(
-            options =>
-            {
-                options.ServerName =
-                    configuration[
-                        "Hangfire:ServerName"]
-                    ?? "BaridikExpress.BackupServer";
+        services.AddHangfireServer(options =>
+        {
+            options.ServerName =
+                configuration["Hangfire:ServerName"]
+                ?? "BaridikExpress.BackupServer";
 
-                options.Queues =
-                [
-                    "emails",
-                    "default",
-                    "backups"
-                ];
-            });
-
+            options.Queues =
+            [
+                "emails",
+                "default",
+                "backups"
+            ];
+        });
 
         return services;
-
     }
+
+    #endregion
 }
