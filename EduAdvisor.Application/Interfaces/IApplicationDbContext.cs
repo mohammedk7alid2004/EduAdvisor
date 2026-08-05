@@ -16,7 +16,7 @@ public interface IApplicationDbContext
     #region Auth & Users
 
     DbSet<User> Users { get; }
-    DbSet<IdentityRole> Roles { get; }
+    DbSet<ApplicationRole> Roles { get; }
     DbSet<RolePermission> RolePermissions { get; set; }
     DbSet<Permission> Permissions { get; set; }
     DbSet<IdentityUserRole<string>> UserRoles { get; }

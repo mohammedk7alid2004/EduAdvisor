@@ -17,7 +17,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace EduAdvisor.Infrastructure.Persistence;
 
-public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbContext
+public class ApplicationDbContext : IdentityDbContext<User,ApplicationRole,string>, IApplicationDbContext
 {
     private readonly IHttpContextAccessor _httpContext;
     private readonly TimeZoneInfo _appTimeZone;
@@ -38,6 +38,7 @@ public class ApplicationDbContext : IdentityDbContext<User>, IApplicationDbConte
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<User> Users => Set<User>();
+    public DbSet<ApplicationRole> Roles => Set<ApplicationRole>();
     public DbSet<Student> Students { get; set; }
     public DbSet<Advisor> Advisors { get; set; }
 

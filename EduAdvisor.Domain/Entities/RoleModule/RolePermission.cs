@@ -10,6 +10,6 @@ public class RolePermission
     public Guid RolePermissionId { get; set; }
     public string RoleId { get; set; } =string.Empty;
     public Guid PermissionId { get; set; }
-    public IdentityRole Role { get; set; } = default!;
+    public ApplicationRole Role { get; set; } = default!;
     public Permission Permission { get; set; }=default!;
 }

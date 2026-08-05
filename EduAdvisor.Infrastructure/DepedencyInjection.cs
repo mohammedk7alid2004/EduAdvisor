@@ -198,7 +198,7 @@ public static class DepedencyInjection
         {
             options.ServerName =
                 configuration["Hangfire:ServerName"]
-                ?? "BaridikExpress.BackupServer";
+                ?? "EduAdvisor.BackupServer";
 
             options.Queues =
             [
