@@ -3,6 +3,7 @@ using EduAdvisor.Application.Interfaces.Auth;
 using EduAdvisor.Application.Interfaces.ExternalServices;
 using EduAdvisor.Application.Interfaces.File;
 using EduAdvisor.Domain.Entities.AuthModule;
+using EduAdvisor.Domain.Entities.RoleModule;
 using EduAdvisor.Infrastructure.ExternalServices.AiRecommendation;
 using EduAdvisor.Infrastructure.Localizer;
 using EduAdvisor.Infrastructure.Persistence;
@@ -93,6 +94,7 @@ public static class DepedencyInjection
         this IServiceCollection services)
     {
         services.AddLocalization();
+
         services.AddScoped<IStringLocalizer, JsonStringLocalizer>();
 
         return services;
@@ -105,8 +107,9 @@ public static class DepedencyInjection
     private static IServiceCollection AddIdentityConfig(
         this IServiceCollection services)
     {
-        services.AddIdentityCore<User>()
-            .AddRoles<IdentityRole>()
+        services
+            .AddIdentityCore<User>()
+            .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
@@ -186,11 +189,9 @@ public static class DepedencyInjection
                         QueuePollInterval =
                             TimeSpan.FromSeconds(15),
 
-                        UseRecommendedIsolationLevel =
-                            true,
+                        UseRecommendedIsolationLevel = true,
 
-                        DisableGlobalLocks =
-                            true
+                        DisableGlobalLocks = true
                     });
         });
 

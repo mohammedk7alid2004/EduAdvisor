@@ -2,6 +2,7 @@
 using EduAdvisor.Domain.Entities.RoleModule;
 using EduAdvisor.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace EduAdvisor.Infrastructure.Data.Seeder.IdentitySeed;
 
@@ -9,63 +10,81 @@ public static class RolePermissionSeed
 {
     public static async Task SeedAsync(
         ApplicationDbContext context,
-        RoleManager<IdentityRole> roleManager)
+        RoleManager<ApplicationRole> roleManager)
     {
-        if (context.RolePermissions.Any()) return;
+        if (await context.RolePermissions.AnyAsync())
+        {
+            return;
+        }
 
         var adminRole = await roleManager.FindByNameAsync("Admin");
         var studentRole = await roleManager.FindByNameAsync("Student");
         var advisorRole = await roleManager.FindByNameAsync("Advisor");
 
-        var permissions = context.Permissions.ToList();
-
-        #region Admin — كل الصلاحيات
-
-        foreach (var perm in permissions)
+        if (adminRole is null)
         {
-            context.RolePermissions.Add(new RolePermission
-            {
-                RolePermissionId = Guid.NewGuid(),
-                RoleId = adminRole!.Id,
-                PermissionId = perm.PermissionId
-            });
+            throw new InvalidOperationException(
+                "Admin role was not found.");
         }
+
+        if (studentRole is null)
+        {
+            throw new InvalidOperationException(
+                "Student role was not found.");
+        }
+
+        if (advisorRole is null)
+        {
+            throw new InvalidOperationException(
+                "Advisor role was not found.");
+        }
+
+        var permissions = await context.Permissions
+            .AsNoTracking()
+            .ToListAsync();
+
+        #region Admin
+
+        var adminPermissions = permissions
+            .Select(permission =>
+                RolePermission.Create(
+                    adminRole.Id,
+                    permission.PermissionId))
+            .ToList();
+
+        context.RolePermissions.AddRange(adminPermissions);
 
         #endregion
 
-        #region Student — صلاحيات محدودة
+        #region Student
 
-        var studentPerms = permissions.Where(p =>
-            p.PermissionName == Permissions.UsersRead ||
-            p.PermissionName == Permissions.AuthView);
+        var studentPermissions = permissions
+            .Where(permission =>
+                permission.PermissionName == Permissions.UsersRead ||
+                permission.PermissionName == Permissions.AuthView)
+            .Select(permission =>
+                RolePermission.Create(
+                    studentRole.Id,
+                    permission.PermissionId))
+            .ToList();
 
-        foreach (var perm in studentPerms)
-        {
-            context.RolePermissions.Add(new RolePermission
-            {
-                RolePermissionId = Guid.NewGuid(),
-                RoleId = studentRole!.Id,
-                PermissionId = perm.PermissionId
-            });
-        }
+        context.RolePermissions.AddRange(studentPermissions);
 
         #endregion
 
-        #region Advisor — صلاحيات متوسطة
+        #region Advisor
 
-        var advisorPerms = permissions.Where(p =>
-            p.PermissionName == Permissions.UsersRead ||
-            p.PermissionName == Permissions.AuthView);
+        var advisorPermissions = permissions
+            .Where(permission =>
+                permission.PermissionName == Permissions.UsersRead ||
+                permission.PermissionName == Permissions.AuthView)
+            .Select(permission =>
+                RolePermission.Create(
+                    advisorRole.Id,
+                    permission.PermissionId))
+            .ToList();
 
-        foreach (var perm in advisorPerms)
-        {
-            context.RolePermissions.Add(new RolePermission
-            {
-                RolePermissionId = Guid.NewGuid(),
-                RoleId = advisorRole!.Id,
-                PermissionId = perm.PermissionId
-            });
-        }
+        context.RolePermissions.AddRange(advisorPermissions);
 
         #endregion
 

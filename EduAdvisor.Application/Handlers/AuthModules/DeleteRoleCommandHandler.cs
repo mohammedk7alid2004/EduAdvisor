@@ -1,11 +1,12 @@
 ﻿using EduAdvisor.Application.Commands.AuthModules;
+using EduAdvisor.Domain.Entities.RoleModule;
 using Microsoft.AspNetCore.Identity;
 
 
 namespace EduAdvisor.Application.Handlers.AuthModules
 {
     public class DeleteRoleCommandHandler(
-        RoleManager<IdentityRole> roleManager,
+        RoleManager<ApplicationRole> roleManager,
         IStringLocalizer localizer
     ) : IRequestHandler<DeleteRoleCommand, Result<string>>
     {

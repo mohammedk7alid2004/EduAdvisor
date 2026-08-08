@@ -34,13 +34,11 @@ public class ApplicationDbContext : IdentityDbContext<User,ApplicationRole,strin
 
     #region DbSets - Auth & Users
 
-    public DbSet<RolePermission> RolePermissions { get; set; }
-    public DbSet<Permission> Permissions { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; }
-    public DbSet<User> Users => Set<User>();
-    public DbSet<ApplicationRole> Roles => Set<ApplicationRole>();
-    public DbSet<Student> Students { get; set; }
-    public DbSet<Advisor> Advisors { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+    public DbSet<Permission> Permissions { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<Student> Students { get; set; } = null!;
+    public DbSet<Advisor> Advisors { get; set; } = null!;
 
     #endregion
 

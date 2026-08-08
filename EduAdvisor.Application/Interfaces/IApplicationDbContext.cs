@@ -8,6 +8,7 @@ using EduAdvisor.Domain.Entities.Semesters;
 using EduAdvisor.Domain.Entities.Universities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace EduAdvisor.Application.Interfaces;
 
@@ -40,6 +41,12 @@ public interface IApplicationDbContext
     DbSet<SemesterCourse> SemesterCourses { get; set; }
     DbSet<CourseRecommendation> CourseRecommendations { get; set; }
     #endregion
+    #region Persistence
 
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+    DatabaseFacade Database { get; }
+
+    Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+
+    #endregion
 }

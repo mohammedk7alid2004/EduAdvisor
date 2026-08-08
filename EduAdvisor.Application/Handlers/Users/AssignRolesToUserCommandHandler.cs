@@ -1,16 +1,17 @@
 ﻿using EduAdvisor.Application.Commands.Users;
+using EduAdvisor.Domain.Entities.RoleModule;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Localization;
 namespace EduAdvisor.Application.Handlers.Users
 {
         public class AssignRolesToUserCommandHandler(
             UserManager<User> userManager,
-            RoleManager<IdentityRole> roleManager,
+            RoleManager<ApplicationRole> roleManager,
             IStringLocalizer localizer
         ) : IRequestHandler<AssignRolesToUserCommand, Result<bool>>
         {
         private readonly UserManager<User> _userManager = userManager;
-        private readonly RoleManager<IdentityRole> _roleManager = roleManager;
+        private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
         private readonly IStringLocalizer _localizer = localizer;
 
         public async Task<Result<bool>> Handle(AssignRolesToUserCommand request, CancellationToken cancellationToken)

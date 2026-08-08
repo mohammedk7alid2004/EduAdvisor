@@ -1,9 +1,6 @@
-﻿using EduAdvisor.Application.DTO.Auth;
-using MediatR;
+﻿namespace EduAdvisor.Application.Commands.AuthModules;
 
-namespace EduAdvisor.Application.Commands.AuthModules
-{
-    public record CreateRoleCommand(
-       string name
-    ) : IRequest<Result<string>>;
-}
+public record CreateRoleCommand(
+   string Name,
+  List<Guid> PermissionIds
+) : IRequest<Result<string>>;

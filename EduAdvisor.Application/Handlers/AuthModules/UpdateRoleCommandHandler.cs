@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using EduAdvisor.Domain.Entities.RoleModule;
+using Microsoft.AspNetCore.Identity;
 
 namespace EduAdvisor.Application.Handlers.AuthModules
 {
     public class UpdateRoleCommandHandler(
-        RoleManager<IdentityRole> roleManager,
+        RoleManager<ApplicationRole> roleManager,
         IStringLocalizer localizer
     ) : IRequestHandler<UpdateRoleCommand, Result<string>>
     {
