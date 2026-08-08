@@ -4,35 +4,51 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+
+concurrency:
+  group: eduadvisor-deploy
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: windows-latest
+    timeout-minutes: 15
+    environment: production  
 
     steps:
-      # Checkout repository
       - name: Checkout source
         uses: actions/checkout@v4
 
-      # Install .NET 9 SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Restore NuGet packages
       - name: Restore Packages
         run: dotnet restore EduAdvisor.sln
-
-      # Build solution
+       
       - name: Build Project
         run: dotnet build EduAdvisor.sln --configuration Release --no-restore
 
-      # Publish API
+      - name: Run Tests
+        run: dotnet test EduAdvisor.sln --configuration Release --no-build --verbosity normal
+        continue-on-error: false  
       - name: Publish API
-        run: dotnet publish EduAdvisor.API/EduAdvisor.API.csproj --configuration Release --output publish --no-build
+        run: >
+          dotnet publish EduAdvisor.API/EduAdvisor.API.csproj
+          --configuration Release
+          --output publish
+          --no-build
 
-      # Deploy to MonsterASP
+      - name: Remove sensitive/dev files
+        shell: pwsh
+        run: |
+          Remove-Item -Path "publish/appsettings.Development.json" -ErrorAction SilentlyContinue
+          Remove-Item -Path "publish/*.pdb" -ErrorAction SilentlyContinue
+
       - name: Deploy to MonsterASP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -42,3 +58,11 @@ jobs:
           protocol: ftps
           local-dir: ./publish/
           server-dir: ./
+          dangerous-clean-slate: false
+          exclude: |
+            **/appsettings.Development.json
+            **/*.pdb
+            **/.git*
+
+      - name: Deployment summary
+        run: echo "✅ Deployed commit ${{ github.sha }} to production"
